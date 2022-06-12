@@ -41,31 +41,36 @@ fn main() -> ! {
         let mut pin: Option<&mut Pin<Output, Dynamic>> = None;
         let mut action: Option<Action> = None;
 
-        loop {
-            let byte = serial.read_byte();
-            let character: char = byte as char;
-            match character {
-                '\n' => break,
-                pin_num @ '1'..='7' => {
-                    pin = Some(match pin_num {
-                        '1' => &mut led,
-                        '2' => &mut d2,
-                        '3' => &mut d3,
-                        '4' => &mut d4,
-                        '5' => &mut d5,
-                        '6' => &mut d6,
-                        '7' => &mut d7,
-                        _ => unreachable!(),
-                    })
-                }
-                '+' => action = Some(Action::Output(PinState::High)),
-                '-' => action = Some(Action::Output(PinState::Low)),
-                _ => ufmt::uwrite!(&mut serial, "Unexpected byte {} ({}). ", byte, byte as char)
-                    .unwrap(),
+        match serial.read_byte() as char {
+            '\n' => continue,
+            '+' => action = Some(Action::Output(PinState::High)),
+            '-' => action = Some(Action::Output(PinState::Low)),
+            byte => ufmt::uwrite!(&mut serial, "Invalid action '{}'. ", byte).unwrap(),
+        }
+
+        match serial.read_byte() as char {
+            '\n' => continue,
+            pin_num @ '1'..='7' => {
+                pin = Some(match pin_num {
+                    '1' => &mut led,
+                    '2' => &mut d2,
+                    '3' => &mut d3,
+                    '4' => &mut d4,
+                    '5' => &mut d5,
+                    '6' => &mut d6,
+                    '7' => &mut d7,
+                    _ => unreachable!(),
+                })
             }
+            byte => ufmt::uwrite!(&mut serial, "Invalid pin '{}'. ", byte).unwrap(),
+        }
+
+        while serial.read_byte() as char != '\n' {
+            ufmt::uwrite!(&mut serial, "Expecting newline. ").unwrap();
         }
         if let (Some(pin), Some(Action::Output(state))) = (pin, action) {
             pin.set_state(state).unwrap();
+            ufmt::uwriteln!(&mut serial, "Done.").unwrap();
         } else {
             ufmt::uwriteln!(&mut serial, "Syntax error.").unwrap();
         }
