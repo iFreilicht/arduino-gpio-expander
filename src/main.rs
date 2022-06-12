@@ -1,6 +1,10 @@
 #![no_std]
 #![no_main]
 
+use arduino_hal::{
+    hal::port::Dynamic,
+    port::{mode::Output, Pin},
+};
 use embedded_hal::digital::v2::{OutputPin, PinState};
 use panic_halt as _;
 
@@ -25,23 +29,35 @@ fn main() -> ! {
      * examples available.
      */
 
-    let mut d2 = pins.d2.into_output();
-    let mut d3 = pins.d3.into_output();
-    let mut d4 = pins.d4.into_output();
-    let mut d5 = pins.d5.into_output();
-    let mut d6 = pins.d6.into_output();
-    let mut d7 = pins.d7.into_output();
-    let mut led = pins.d13.into_output();
+    let mut d2 = pins.d2.into_output().downgrade();
+    let mut d3 = pins.d3.into_output().downgrade();
+    let mut d4 = pins.d4.into_output().downgrade();
+    let mut d5 = pins.d5.into_output().downgrade();
+    let mut d6 = pins.d6.into_output().downgrade();
+    let mut d7 = pins.d7.into_output().downgrade();
+    let mut led = pins.d13.into_output().downgrade();
 
     loop {
-        let mut pin: Option<u8> = None;
+        let mut pin: Option<&mut Pin<Output, Dynamic>> = None;
         let mut action: Option<Action> = None;
 
         loop {
             let byte = serial.read_byte();
-            match byte.into() {
+            let character: char = byte as char;
+            match character {
                 '\n' => break,
-                '1'..='7' => pin = Some(byte - 48),
+                pin_num @ '1'..='7' => {
+                    pin = Some(match pin_num {
+                        '1' => &mut led,
+                        '2' => &mut d2,
+                        '3' => &mut d3,
+                        '4' => &mut d4,
+                        '5' => &mut d5,
+                        '6' => &mut d6,
+                        '7' => &mut d7,
+                        _ => unreachable!(),
+                    })
+                }
                 '+' => action = Some(Action::Output(PinState::High)),
                 '-' => action = Some(Action::Output(PinState::Low)),
                 _ => ufmt::uwrite!(&mut serial, "Unexpected byte {} ({}). ", byte, byte as char)
@@ -49,16 +65,7 @@ fn main() -> ! {
             }
         }
         if let (Some(pin), Some(Action::Output(state))) = (pin, action) {
-            match (pin, state) {
-                (1, state) => led.set_state(state).unwrap(),
-                (2, state) => d2.set_state(state).unwrap(),
-                (3, state) => d3.set_state(state).unwrap(),
-                (4, state) => d4.set_state(state).unwrap(),
-                (5, state) => d5.set_state(state).unwrap(),
-                (6, state) => d6.set_state(state).unwrap(),
-                (7, state) => d7.set_state(state).unwrap(),
-                _ => ufmt::uwriteln!(&mut serial, "Invalid pin number {}.", pin).unwrap(),
-            }
+            pin.set_state(state).unwrap();
         } else {
             ufmt::uwriteln!(&mut serial, "Syntax error.").unwrap();
         }
