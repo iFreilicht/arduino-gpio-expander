@@ -1,5 +1,13 @@
 # Arduino GPIO expander
 
+The goal of this project is this project is to provide firmware and drivers to make an Arduino serve
+as a GPIO expander via USB, giving any PC or SBC GPIO pins that can be used as if they were built in.
+The target platform is Linux.
+
+# Work in progress!
+
+I'm only playing around right now.
+
 Based on [`cargo-generate`] template for jumpstarting projects on common AVR
 microcontroller boards.  This template supports the following hardware at this
 time:
