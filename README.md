@@ -1,6 +1,6 @@
-`avr-hal-template`
-==================
-[`cargo-generate`] template for jumpstarting projects on common AVR
+# Arduino GPIO expander
+
+Based on [`cargo-generate`] template for jumpstarting projects on common AVR
 microcontroller boards.  This template supports the following hardware at this
 time:
 
