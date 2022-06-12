@@ -1,11 +1,11 @@
 #![no_std]
 #![no_main]
 
+use embedded_hal::digital::v2::{OutputPin, PinState};
 use panic_halt as _;
 
 enum Action {
-    OutputHigh,
-    OutputLow,
+    Output(PinState),
 }
 
 #[arduino_hal::entry]
@@ -42,28 +42,21 @@ fn main() -> ! {
             match byte.into() {
                 '\n' => break,
                 '1'..='7' => pin = Some(byte - 48),
-                '+' => action = Some(Action::OutputHigh),
-                '-' => action = Some(Action::OutputLow),
+                '+' => action = Some(Action::Output(PinState::High)),
+                '-' => action = Some(Action::Output(PinState::Low)),
                 _ => ufmt::uwrite!(&mut serial, "Unexpected byte {} ({}). ", byte, byte as char)
                     .unwrap(),
             }
         }
-        if let (Some(pin), Some(action)) = (pin, action) {
-            match (pin, action) {
-                (1, Action::OutputHigh) => led.set_high(),
-                (1, Action::OutputLow) => led.set_low(),
-                (2, Action::OutputHigh) => d2.set_high(),
-                (2, Action::OutputLow) => d2.set_low(),
-                (3, Action::OutputHigh) => d3.set_high(),
-                (3, Action::OutputLow) => d3.set_low(),
-                (4, Action::OutputHigh) => d4.set_high(),
-                (4, Action::OutputLow) => d4.set_low(),
-                (5, Action::OutputHigh) => d5.set_high(),
-                (5, Action::OutputLow) => d5.set_low(),
-                (6, Action::OutputHigh) => d6.set_high(),
-                (6, Action::OutputLow) => d6.set_low(),
-                (7, Action::OutputHigh) => d7.set_high(),
-                (7, Action::OutputLow) => d7.set_low(),
+        if let (Some(pin), Some(Action::Output(state))) = (pin, action) {
+            match (pin, state) {
+                (1, state) => led.set_state(state).unwrap(),
+                (2, state) => d2.set_state(state).unwrap(),
+                (3, state) => d3.set_state(state).unwrap(),
+                (4, state) => d4.set_state(state).unwrap(),
+                (5, state) => d5.set_state(state).unwrap(),
+                (6, state) => d6.set_state(state).unwrap(),
+                (7, state) => d7.set_state(state).unwrap(),
                 _ => ufmt::uwriteln!(&mut serial, "Invalid pin number {}.", pin).unwrap(),
             }
         } else {
