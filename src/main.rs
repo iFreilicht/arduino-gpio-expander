@@ -74,7 +74,5 @@ fn main() -> ! {
         } else {
             ufmt::uwriteln!(&mut serial, "Syntax error.").unwrap();
         }
-
-        arduino_hal::delay_ms(1000);
     }
 }
