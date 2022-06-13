@@ -21,6 +21,29 @@ enum IOPin<T> {
     Output(Pin<Output, T>),
 }
 
+impl<T> IOPin<T>
+where
+    T: avr_hal_generic::port::PinOps,
+{
+    fn output_state(self, state: PinState) -> Self {
+        let mut output_pin = match self {
+            IOPin::Input(input_pin) => input_pin.into_output(),
+            IOPin::Output(output_pin) => output_pin,
+        };
+        output_pin.set_state(state).unwrap();
+        IOPin::Output(output_pin)
+    }
+
+    fn input(self) -> (Self, bool) {
+        let input_pin = match self {
+            IOPin::Input(input_pin) => input_pin,
+            IOPin::Output(output_pin) => output_pin.into_pull_up_input(),
+        };
+        let is_high = input_pin.is_high();
+        (IOPin::Input(input_pin), is_high)
+    }
+}
+
 enum UnoPin {
     D13(IOPin<PB5>),
     D2(IOPin<PD2>),
@@ -31,71 +54,49 @@ enum UnoPin {
     D7(IOPin<PD7>),
 }
 
-fn output_state_io<T>(io_pin: IOPin<T>, state: PinState) -> IOPin<T>
-where
-    T: avr_hal_generic::port::PinOps,
-{
-    let mut output_pin = match io_pin {
-        IOPin::Input(input_pin) => input_pin.into_output(),
-        IOPin::Output(output_pin) => output_pin,
-    };
-    output_pin.set_state(state).unwrap();
-    IOPin::Output(output_pin)
-}
-
-fn output_state(uno_pin: UnoPin, state: PinState) -> UnoPin {
-    match uno_pin {
-        UnoPin::D13(io_pin) => UnoPin::D13(output_state_io(io_pin, state)),
-        UnoPin::D2(io_pin) => UnoPin::D2(output_state_io(io_pin, state)),
-        UnoPin::D3(io_pin) => UnoPin::D3(output_state_io(io_pin, state)),
-        UnoPin::D4(io_pin) => UnoPin::D4(output_state_io(io_pin, state)),
-        UnoPin::D5(io_pin) => UnoPin::D5(output_state_io(io_pin, state)),
-        UnoPin::D6(io_pin) => UnoPin::D6(output_state_io(io_pin, state)),
-        UnoPin::D7(io_pin) => UnoPin::D7(output_state_io(io_pin, state)),
+impl UnoPin {
+    fn output_state(self, state: PinState) -> Self {
+        match self {
+            Self::D13(io_pin) => Self::D13(io_pin.output_state(state)),
+            Self::D2(io_pin) => Self::D2(io_pin.output_state(state)),
+            Self::D3(io_pin) => Self::D3(io_pin.output_state(state)),
+            Self::D4(io_pin) => Self::D4(io_pin.output_state(state)),
+            Self::D5(io_pin) => Self::D5(io_pin.output_state(state)),
+            Self::D6(io_pin) => Self::D6(io_pin.output_state(state)),
+            Self::D7(io_pin) => Self::D7(io_pin.output_state(state)),
+        }
     }
-}
 
-fn input_io<T>(io_pin: IOPin<T>) -> (IOPin<T>, bool)
-where
-    T: avr_hal_generic::port::PinOps,
-{
-    let input_pin = match io_pin {
-        IOPin::Input(input_pin) => input_pin,
-        IOPin::Output(output_pin) => output_pin.into_pull_up_input(),
-    };
-    let is_high = input_pin.is_high();
-    (IOPin::Input(input_pin), is_high)
-}
-
-fn input(uno_pin: UnoPin) -> (UnoPin, bool) {
-    match uno_pin {
-        UnoPin::D13(io_pin) => {
-            let (pin, is_high) = input_io(io_pin);
-            (UnoPin::D13(pin), is_high)
-        }
-        UnoPin::D2(io_pin) => {
-            let (pin, is_high) = input_io(io_pin);
-            (UnoPin::D2(pin), is_high)
-        }
-        UnoPin::D3(io_pin) => {
-            let (pin, is_high) = input_io(io_pin);
-            (UnoPin::D3(pin), is_high)
-        }
-        UnoPin::D4(io_pin) => {
-            let (pin, is_high) = input_io(io_pin);
-            (UnoPin::D4(pin), is_high)
-        }
-        UnoPin::D5(io_pin) => {
-            let (pin, is_high) = input_io(io_pin);
-            (UnoPin::D5(pin), is_high)
-        }
-        UnoPin::D6(io_pin) => {
-            let (pin, is_high) = input_io(io_pin);
-            (UnoPin::D6(pin), is_high)
-        }
-        UnoPin::D7(io_pin) => {
-            let (pin, is_high) = input_io(io_pin);
-            (UnoPin::D7(pin), is_high)
+    fn input(self) -> (Self, bool) {
+        match self {
+            Self::D13(io_pin) => {
+                let (pin, is_high) = io_pin.input();
+                (Self::D13(pin), is_high)
+            }
+            Self::D2(io_pin) => {
+                let (pin, is_high) = io_pin.input();
+                (Self::D2(pin), is_high)
+            }
+            Self::D3(io_pin) => {
+                let (pin, is_high) = io_pin.input();
+                (Self::D3(pin), is_high)
+            }
+            Self::D4(io_pin) => {
+                let (pin, is_high) = io_pin.input();
+                (Self::D4(pin), is_high)
+            }
+            Self::D5(io_pin) => {
+                let (pin, is_high) = io_pin.input();
+                (Self::D5(pin), is_high)
+            }
+            Self::D6(io_pin) => {
+                let (pin, is_high) = io_pin.input();
+                (Self::D6(pin), is_high)
+            }
+            Self::D7(io_pin) => {
+                let (pin, is_high) = io_pin.input();
+                (Self::D7(pin), is_high)
+            }
         }
     }
 }
@@ -149,25 +150,25 @@ fn main() -> ! {
         if let (Some(pin), Some(action)) = (pin, action) {
             match action {
                 Action::Output(state) => match pin {
-                    '1' => led = output_state(led, state),
-                    '2' => d2 = output_state(d2, state),
-                    '3' => d3 = output_state(d3, state),
-                    '4' => d4 = output_state(d4, state),
-                    '5' => d5 = output_state(d5, state),
-                    '6' => d6 = output_state(d6, state),
-                    '7' => d7 = output_state(d7, state),
+                    '1' => led = led.output_state(state),
+                    '2' => d2 = d2.output_state(state),
+                    '3' => d3 = d3.output_state(state),
+                    '4' => d4 = d4.output_state(state),
+                    '5' => d5 = d5.output_state(state),
+                    '6' => d6 = d6.output_state(state),
+                    '7' => d7 = d7.output_state(state),
                     _ => unreachable!(),
                 },
                 Action::Input => {
                     let is_high;
                     match pin {
-                        '1' => (led, is_high) = input(led),
-                        '2' => (d2, is_high) = input(d2),
-                        '3' => (d3, is_high) = input(d3),
-                        '4' => (d4, is_high) = input(d4),
-                        '5' => (d5, is_high) = input(d5),
-                        '6' => (d6, is_high) = input(d6),
-                        '7' => (d7, is_high) = input(d7),
+                        '1' => (led, is_high) = led.input(),
+                        '2' => (d2, is_high) = d2.input(),
+                        '3' => (d3, is_high) = d3.input(),
+                        '4' => (d4, is_high) = d4.input(),
+                        '5' => (d5, is_high) = d5.input(),
+                        '6' => (d6, is_high) = d6.input(),
+                        '7' => (d7, is_high) = d7.input(),
                         _ => unreachable!(),
                     };
                     if is_high {
