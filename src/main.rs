@@ -16,10 +16,6 @@ enum Action {
     Input,
 }
 
-trait IOPinOutput {
-    fn set_state(self, state: PinState);
-}
-
 enum IOPin<T> {
     Input(Pin<Input<PullUp>, T>),
     Output(Pin<Output, T>),
