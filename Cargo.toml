@@ -21,6 +21,10 @@ git = "https://github.com/rahix/avr-hal"
 rev = "d0d2f243bd3e10b49f6a78d44839a6caa8be7d43"
 features = ["arduino-uno"]
 
+[dependencies.avr-hal-generic]
+git = "https://github.com/rahix/avr-hal"
+rev = "d0d2f243bd3e10b49f6a78d44839a6caa8be7d43"
+
 # Configure the build for minimal size - AVRs have very little program memory
 [profile.dev]
 panic = "abort"
