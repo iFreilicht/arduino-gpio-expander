@@ -14,6 +14,7 @@ use heapless::FnvIndexMap;
 enum Action {
     Output(PinState),
     Input,
+    List,
 }
 
 enum StatefulPin<T> {
@@ -73,6 +74,7 @@ where
 trait IOPin: fmt::Debug {
     fn output_state(&mut self, state: PinState);
     fn input(&mut self) -> bool;
+    fn name(&self) -> &'static str;
 }
 
 impl<T> IOPin for MutablePin<T>
@@ -87,6 +89,10 @@ where
         let mut is_high = false;
         self.pin.set(Some(self.pin.take().unwrap().input(&mut is_high)));
         is_high
+    }
+
+    fn name(&self) -> &'static str {
+        self.name
     }
 }
 
@@ -165,36 +171,46 @@ fn main() -> ! {
             '+' => action = Some(Action::Output(PinState::High)),
             '-' => action = Some(Action::Output(PinState::Low)),
             '?' => action = Some(Action::Input),
+            'l' => action = Some(Action::List),
             byte => ufmt::uwrite!(&mut serial, "Invalid action '{}'. ", byte).unwrap(),
         }
 
-        let maybe_pin = serial.read_byte() as char;
-        if maybe_pin == '\n' {
-            continue;
-        } else if pin_dispatcher.pin_map.contains_key(&maybe_pin) {
-            pin = Some(maybe_pin)
+        if let Some(Action::List) = action {
         } else {
-            ufmt::uwrite!(&mut serial, "Invalid pin '{}'. ", maybe_pin).unwrap()
+            let maybe_pin = serial.read_byte() as char;
+            if maybe_pin == '\n' {
+                continue;
+            } else if pin_dispatcher.pin_map.contains_key(&maybe_pin) {
+                pin = Some(maybe_pin)
+            } else {
+                ufmt::uwrite!(&mut serial, "Invalid pin '{}'. ", maybe_pin).unwrap()
+            }
         }
 
         while serial.read_byte() as char != '\n' {
             ufmt::uwrite!(&mut serial, "Expecting newline. ").unwrap();
         }
-        if let (Some(pin_label), Some(action)) = (pin, action) {
-            match action {
-                Action::Output(state) => pin_dispatcher.output(pin_label, state),
-                Action::Input => {
-                    if pin_dispatcher.input(pin_label) {
-                        ufmt::uwrite!(&mut serial, "Pin is high. ").unwrap();
-                    } else {
-                        ufmt::uwrite!(&mut serial, "Pin is low. ").unwrap();
+        match (pin, action) {
+            (Some(pin_label), Some(action)) => {
+                match action {
+                    Action::Output(state) => pin_dispatcher.output(pin_label, state),
+                    Action::Input => {
+                        if pin_dispatcher.input(pin_label) {
+                            ufmt::uwrite!(&mut serial, "Pin is high. ").unwrap();
+                        } else {
+                            ufmt::uwrite!(&mut serial, "Pin is low. ").unwrap();
+                        }
                     }
+                    Action::List => unreachable!(),
+                }
+                ufmt::uwriteln!(&mut serial, "Done.").unwrap();
+            }
+            (_, Some(Action::List)) => {
+                for (pin_label, pin) in &pin_dispatcher.pin_map {
+                    ufmt::uwriteln!(&mut serial, "{}: {}", pin_label, pin.name()).unwrap()
                 }
             }
-
-            ufmt::uwriteln!(&mut serial, "Done.").unwrap();
-        } else {
-            ufmt::uwriteln!(&mut serial, "Syntax error.").unwrap();
+            _ => ufmt::uwriteln!(&mut serial, "Syntax error.").unwrap(),
         }
     }
 }
