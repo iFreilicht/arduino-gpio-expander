@@ -118,6 +118,13 @@ impl<'a> PinDispatcher<'a> {
     }
 }
 
+macro_rules! add_pin {
+    ($dispatcher:ident, $pins:ident.$name:ident, $tag:literal) => {
+        let mut $name = MutablePin::new($pins.$name, stringify!($name));
+        $dispatcher.add_pin($tag, &mut $name);
+    };
+}
+
 #[arduino_hal::entry]
 fn main() -> ! {
     let dp = arduino_hal::Peripherals::take().unwrap();
@@ -136,20 +143,13 @@ fn main() -> ! {
      */
 
     let mut pin_dispatcher = PinDispatcher::new();
-    let mut d13 = MutablePin::new(pins.d13, "D13");
-    pin_dispatcher.add_pin('1', &mut d13);
-    let mut d2 = MutablePin::new(pins.d2, "D2");
-    pin_dispatcher.add_pin('2', &mut d2);
-    let mut d3 = MutablePin::new(pins.d3, "D3");
-    pin_dispatcher.add_pin('3', &mut d3);
-    let mut d4 = MutablePin::new(pins.d4, "D4");
-    pin_dispatcher.add_pin('4', &mut d4);
-    let mut d5 = MutablePin::new(pins.d5, "D5");
-    pin_dispatcher.add_pin('5', &mut d5);
-    let mut d6 = MutablePin::new(pins.d6, "D6");
-    pin_dispatcher.add_pin('6', &mut d6);
-    let mut d7 = MutablePin::new(pins.d7, "D7");
-    pin_dispatcher.add_pin('7', &mut d7);
+    add_pin!(pin_dispatcher, pins.d13, '1');
+    add_pin!(pin_dispatcher, pins.d2, '2');
+    add_pin!(pin_dispatcher, pins.d3, '3');
+    add_pin!(pin_dispatcher, pins.d4, '4');
+    add_pin!(pin_dispatcher, pins.d5, '5');
+    add_pin!(pin_dispatcher, pins.d6, '6');
+    add_pin!(pin_dispatcher, pins.d7, '7');
 
     loop {
         let mut pin: Option<char> = None;
