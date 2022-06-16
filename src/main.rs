@@ -1,12 +1,9 @@
 #![no_std]
 #![no_main]
 
-use arduino_hal::{
-    hal::port::{PB5, PD2, PD3, PD4, PD5, PD6, PD7},
-    port::{
-        mode::{Floating, Input, Output, PullUp},
-        Pin,
-    },
+use arduino_hal::hal::port::{
+    mode::{Floating, Input, Output, PullUp},
+    Pin,
 };
 use core::{cell::Cell, fmt};
 use embedded_hal::digital::v2::{OutputPin, PinState};
@@ -93,16 +90,6 @@ where
     }
 }
 
-struct PinStore {
-    d13: MutablePin<PB5>,
-    d2: MutablePin<PD2>,
-    d3: MutablePin<PD3>,
-    d4: MutablePin<PD4>,
-    d5: MutablePin<PD5>,
-    d6: MutablePin<PD6>,
-    d7: MutablePin<PD7>,
-}
-
 type PinMap<'a> = FnvIndexMap<char, &'a mut dyn IOPin, 64>;
 
 struct PinDispatcher<'a> {
@@ -110,17 +97,12 @@ struct PinDispatcher<'a> {
 }
 
 impl<'a> PinDispatcher<'a> {
-    fn new(pin_list: &'a mut PinStore) -> Self {
-        let pin_map = PinMap::new();
-        let mut new_dispatcher = PinDispatcher { pin_map };
-        new_dispatcher.pin_map.insert('1', &mut pin_list.d13).unwrap();
-        new_dispatcher.pin_map.insert('2', &mut pin_list.d2).unwrap();
-        new_dispatcher.pin_map.insert('3', &mut pin_list.d3).unwrap();
-        new_dispatcher.pin_map.insert('4', &mut pin_list.d4).unwrap();
-        new_dispatcher.pin_map.insert('5', &mut pin_list.d5).unwrap();
-        new_dispatcher.pin_map.insert('6', &mut pin_list.d6).unwrap();
-        new_dispatcher.pin_map.insert('7', &mut pin_list.d7).unwrap();
-        new_dispatcher
+    fn new() -> Self {
+        PinDispatcher { pin_map: PinMap::new() }
+    }
+
+    fn add_pin(&mut self, pin_label: char, pin: &'a mut dyn IOPin) {
+        self.pin_map.insert(pin_label, pin).unwrap();
     }
 
     fn output(&mut self, pin_label: char, state: PinState) {
@@ -153,16 +135,21 @@ fn main() -> ! {
      * examples available.
      */
 
-    let mut pin_list = PinStore {
-        d13: MutablePin::new(pins.d13, "D13"),
-        d2: MutablePin::new(pins.d2, "D2"),
-        d3: MutablePin::new(pins.d3, "D3"),
-        d4: MutablePin::new(pins.d4, "D4"),
-        d5: MutablePin::new(pins.d5, "D5"),
-        d6: MutablePin::new(pins.d6, "D6"),
-        d7: MutablePin::new(pins.d7, "D7"),
-    };
-    let mut pin_dispatcher = PinDispatcher::new(&mut pin_list);
+    let mut pin_dispatcher = PinDispatcher::new();
+    let mut d13 = MutablePin::new(pins.d13, "D13");
+    pin_dispatcher.add_pin('1', &mut d13);
+    let mut d2 = MutablePin::new(pins.d2, "D2");
+    pin_dispatcher.add_pin('2', &mut d2);
+    let mut d3 = MutablePin::new(pins.d3, "D3");
+    pin_dispatcher.add_pin('3', &mut d3);
+    let mut d4 = MutablePin::new(pins.d4, "D4");
+    pin_dispatcher.add_pin('4', &mut d4);
+    let mut d5 = MutablePin::new(pins.d5, "D5");
+    pin_dispatcher.add_pin('5', &mut d5);
+    let mut d6 = MutablePin::new(pins.d6, "D6");
+    pin_dispatcher.add_pin('6', &mut d6);
+    let mut d7 = MutablePin::new(pins.d7, "D7");
+    pin_dispatcher.add_pin('7', &mut d7);
 
     loop {
         let mut pin: Option<char> = None;
