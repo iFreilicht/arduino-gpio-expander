@@ -143,6 +143,18 @@ fn main() -> ! {
     add_pin!(pin_dispatcher, pins.d5, '5');
     add_pin!(pin_dispatcher, pins.d6, '6');
     add_pin!(pin_dispatcher, pins.d7, '7');
+    add_pin!(pin_dispatcher, pins.d8, '8');
+    add_pin!(pin_dispatcher, pins.d9, '9');
+    add_pin!(pin_dispatcher, pins.d10, 'a');
+    add_pin!(pin_dispatcher, pins.d11, 'b');
+    add_pin!(pin_dispatcher, pins.d12, 'c');
+
+    add_pin!(pin_dispatcher, pins.a0, 'A');
+    add_pin!(pin_dispatcher, pins.a1, 'B');
+    add_pin!(pin_dispatcher, pins.a2, 'C');
+    add_pin!(pin_dispatcher, pins.a3, 'D');
+    add_pin!(pin_dispatcher, pins.a4, 'E');
+    add_pin!(pin_dispatcher, pins.a5, 'F');
 
     loop {
         let mut pin: Option<char> = None;
