@@ -132,16 +132,6 @@ fn main() -> ! {
 
     let mut serial = arduino_hal::default_serial!(dp, pins, 57600);
 
-    /*
-     * For examples (and inspiration), head to
-     *
-     *     https://github.com/Rahix/avr-hal/tree/main/examples
-     *
-     * NOTE: Not all examples were ported to all boards!  There is a good chance though, that code
-     * for a different board can be adapted for yours.  The Arduino Uno currently has the most
-     * examples available.
-     */
-
     let mut pin_dispatcher = PinDispatcher::new();
     add_pin!(pin_dispatcher, pins.d13, '1');
     add_pin!(pin_dispatcher, pins.d2, '2');
