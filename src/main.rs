@@ -1,8 +1,6 @@
 #![no_std]
 #![no_main]
 
-use core::cell::Cell;
-
 use arduino_hal::{
     hal::port::{PB5, PD2, PD3, PD4, PD5, PD6, PD7},
     port::{
@@ -10,6 +8,7 @@ use arduino_hal::{
         Pin,
     },
 };
+use core::{cell::Cell, fmt};
 use embedded_hal::digital::v2::{OutputPin, PinState};
 use panic_halt as _;
 
@@ -48,16 +47,25 @@ where
     }
 }
 
-type MutablePin<T> = Cell<Option<StatefulPin<T>>>;
+struct MutablePin<T>(Cell<Option<StatefulPin<T>>>);
 
 fn new_pin<T>(pin: Pin<Input<Floating>, T>) -> MutablePin<T>
 where
     T: avr_hal_generic::port::PinOps,
 {
-    Cell::new(Some(StatefulPin::Input(pin.into_pull_up_input())))
+    MutablePin(Cell::new(Some(StatefulPin::Input(pin.into_pull_up_input()))))
 }
 
-trait IOPin {
+impl<T> fmt::Debug for MutablePin<T>
+where
+    T: avr_hal_generic::port::PinOps,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("MutablePin").finish_non_exhaustive()
+    }
+}
+
+trait IOPin: fmt::Debug {
     fn output_state(&mut self, state: PinState);
     fn input(&mut self) -> bool;
 }
@@ -67,12 +75,12 @@ where
     T: avr_hal_generic::port::PinOps,
 {
     fn output_state(&mut self, state: PinState) {
-        self.set(Some(self.take().unwrap().output_state(state)))
+        self.0.set(Some(self.0.take().unwrap().output_state(state)))
     }
 
     fn input(&mut self) -> bool {
         let mut is_high = false;
-        self.set(Some(self.take().unwrap().input(&mut is_high)));
+        self.0.set(Some(self.0.take().unwrap().input(&mut is_high)));
         is_high
     }
 }
@@ -97,13 +105,13 @@ impl<'a> PinDispatcher<'a> {
     fn new(pin_list: &'a mut PinStore) -> Self {
         let pin_map = PinMap::new();
         let mut new_dispatcher = PinDispatcher { pin_map };
-        new_dispatcher.pin_map.insert('1', &mut pin_list.d13);
-        new_dispatcher.pin_map.insert('2', &mut pin_list.d2);
-        new_dispatcher.pin_map.insert('3', &mut pin_list.d3);
-        new_dispatcher.pin_map.insert('4', &mut pin_list.d4);
-        new_dispatcher.pin_map.insert('5', &mut pin_list.d5);
-        new_dispatcher.pin_map.insert('6', &mut pin_list.d6);
-        new_dispatcher.pin_map.insert('7', &mut pin_list.d7);
+        new_dispatcher.pin_map.insert('1', &mut pin_list.d13).unwrap();
+        new_dispatcher.pin_map.insert('2', &mut pin_list.d2).unwrap();
+        new_dispatcher.pin_map.insert('3', &mut pin_list.d3).unwrap();
+        new_dispatcher.pin_map.insert('4', &mut pin_list.d4).unwrap();
+        new_dispatcher.pin_map.insert('5', &mut pin_list.d5).unwrap();
+        new_dispatcher.pin_map.insert('6', &mut pin_list.d6).unwrap();
+        new_dispatcher.pin_map.insert('7', &mut pin_list.d7).unwrap();
         new_dispatcher
     }
 
