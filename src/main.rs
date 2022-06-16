@@ -102,7 +102,10 @@ impl<'a> PinDispatcher<'a> {
     }
 
     fn add_pin(&mut self, pin_label: char, pin: &'a mut dyn IOPin) {
-        self.pin_map.insert(pin_label, pin).unwrap();
+        let maybe_previous_pin = self.pin_map.insert(pin_label, pin).unwrap();
+        if maybe_previous_pin.is_some() {
+            panic!("Inserting pin failed because the pin_label was already in use.")
+        }
     }
 
     fn output(&mut self, pin_label: char, state: PinState) {
