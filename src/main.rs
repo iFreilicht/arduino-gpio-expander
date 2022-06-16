@@ -56,19 +56,19 @@ where
 }
 
 trait IOPin {
-    fn output_state(&self, state: PinState);
-    fn input(&self) -> bool;
+    fn output_state(&mut self, state: PinState);
+    fn input(&mut self) -> bool;
 }
 
 impl<T> IOPin for MutablePin<T>
 where
     T: avr_hal_generic::port::PinOps,
 {
-    fn output_state(&self, state: PinState) {
+    fn output_state(&mut self, state: PinState) {
         self.set(Some(self.take().unwrap().output_state(state)))
     }
 
-    fn input(&self) -> bool {
+    fn input(&mut self) -> bool {
         let mut is_high = false;
         self.set(Some(self.take().unwrap().input(&mut is_high)));
         is_high
@@ -86,7 +86,7 @@ struct PinDispatcher {
 }
 
 impl PinDispatcher {
-    fn output(&self, pin_label: char, state: PinState) {
+    fn output(&mut self, pin_label: char, state: PinState) {
         self.get_pin(pin_label).output_state(state);
     }
 
@@ -94,15 +94,15 @@ impl PinDispatcher {
         self.get_pin(pin_label).input()
     }
 
-    fn get_pin(&self, pin_label: char) -> &dyn IOPin {
+    fn get_pin(&mut self, pin_label: char) -> &mut dyn IOPin {
         match pin_label {
-            '1' => &self.d13,
-            '2' => &self.d2,
-            '3' => &self.d3,
-            '4' => &self.d4,
-            '5' => &self.d5,
-            '6' => &self.d6,
-            '7' => &self.d7,
+            '1' => &mut self.d13,
+            '2' => &mut self.d2,
+            '3' => &mut self.d3,
+            '4' => &mut self.d4,
+            '5' => &mut self.d5,
+            '6' => &mut self.d6,
+            '7' => &mut self.d7,
             _ => unreachable!(),
         }
     }
