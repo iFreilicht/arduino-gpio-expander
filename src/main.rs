@@ -18,49 +18,51 @@ enum Action {
     Input,
 }
 
-enum IOPin<T> {
+enum StatefulPin<T> {
     Input(Pin<Input<PullUp>, T>),
     Output(Pin<Output, T>),
 }
 
-impl<T> IOPin<T>
+impl<T> StatefulPin<T>
 where
     T: avr_hal_generic::port::PinOps,
 {
     fn output_state(self, state: PinState) -> Self {
         let mut output_pin = match self {
-            IOPin::Input(input_pin) => input_pin.into_output(),
-            IOPin::Output(output_pin) => output_pin,
+            StatefulPin::Input(input_pin) => input_pin.into_output(),
+            StatefulPin::Output(output_pin) => output_pin,
         };
         output_pin.set_state(state).unwrap();
-        IOPin::Output(output_pin)
+        StatefulPin::Output(output_pin)
     }
 
     fn input(self, is_high: &mut bool) -> Self {
         let input_pin = match self {
-            IOPin::Input(input_pin) => input_pin,
-            IOPin::Output(output_pin) => output_pin.into_pull_up_input(),
+            StatefulPin::Input(input_pin) => input_pin,
+            StatefulPin::Output(output_pin) => output_pin.into_pull_up_input(),
         };
         *is_high = input_pin.is_high();
-        IOPin::Input(input_pin)
+        StatefulPin::Input(input_pin)
     }
 }
 
-fn new_pin<T>(pin: Pin<Input<Floating>, T>) -> Cell<Option<IOPin<T>>>
+type MutablePin<T> = Cell<Option<StatefulPin<T>>>;
+
+fn new_pin<T>(pin: Pin<Input<Floating>, T>) -> MutablePin<T>
 where
     T: avr_hal_generic::port::PinOps,
 {
-    Cell::new(Some(IOPin::Input(pin.into_pull_up_input())))
+    Cell::new(Some(StatefulPin::Input(pin.into_pull_up_input())))
 }
 
-fn output_state<T>(pin: &Cell<Option<IOPin<T>>>, state: PinState)
+fn output_state<T>(pin: &MutablePin<T>, state: PinState)
 where
     T: avr_hal_generic::port::PinOps,
 {
     pin.set(Some(pin.take().unwrap().output_state(state)))
 }
 
-fn input<T>(pin: &Cell<Option<IOPin<T>>>, is_high: &mut bool)
+fn input<T>(pin: &MutablePin<T>, is_high: &mut bool)
 where
     T: avr_hal_generic::port::PinOps,
 {
@@ -68,13 +70,13 @@ where
 }
 
 struct PinDispatcher {
-    d13: Cell<Option<IOPin<PB5>>>,
-    d2: Cell<Option<IOPin<PD2>>>,
-    d3: Cell<Option<IOPin<PD3>>>,
-    d4: Cell<Option<IOPin<PD4>>>,
-    d5: Cell<Option<IOPin<PD5>>>,
-    d6: Cell<Option<IOPin<PD6>>>,
-    d7: Cell<Option<IOPin<PD7>>>,
+    d13: MutablePin<PB5>,
+    d2: MutablePin<PD2>,
+    d3: MutablePin<PD3>,
+    d4: MutablePin<PD4>,
+    d5: MutablePin<PD5>,
+    d6: MutablePin<PD6>,
+    d7: MutablePin<PD7>,
 }
 
 impl PinDispatcher {
