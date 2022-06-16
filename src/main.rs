@@ -53,6 +53,20 @@ where
     Cell::new(Some(IOPin::Input(pin.into_pull_up_input())))
 }
 
+fn output_state<T>(pin: &Cell<Option<IOPin<T>>>, state: PinState)
+where
+    T: avr_hal_generic::port::PinOps,
+{
+    pin.set(Some(pin.take().unwrap().output_state(state)))
+}
+
+fn input<T>(pin: &Cell<Option<IOPin<T>>>, is_high: &mut bool)
+where
+    T: avr_hal_generic::port::PinOps,
+{
+    pin.set(Some(pin.take().unwrap().input(is_high)))
+}
+
 struct PinDispatcher {
     d13: Cell<Option<IOPin<PB5>>>,
     d2: Cell<Option<IOPin<PD2>>>,
@@ -66,13 +80,13 @@ struct PinDispatcher {
 impl PinDispatcher {
     fn output(&self, pin_label: char, state: PinState) {
         match pin_label {
-            '1' => self.d13.set(Some(self.d13.take().unwrap().output_state(state))),
-            '2' => self.d2.set(Some(self.d2.take().unwrap().output_state(state))),
-            '3' => self.d3.set(Some(self.d3.take().unwrap().output_state(state))),
-            '4' => self.d4.set(Some(self.d4.take().unwrap().output_state(state))),
-            '5' => self.d5.set(Some(self.d5.take().unwrap().output_state(state))),
-            '6' => self.d6.set(Some(self.d6.take().unwrap().output_state(state))),
-            '7' => self.d7.set(Some(self.d7.take().unwrap().output_state(state))),
+            '1' => output_state(&self.d13, state),
+            '2' => output_state(&self.d2, state),
+            '3' => output_state(&self.d3, state),
+            '4' => output_state(&self.d4, state),
+            '5' => output_state(&self.d5, state),
+            '6' => output_state(&self.d6, state),
+            '7' => output_state(&self.d7, state),
             _ => unreachable!(),
         };
     }
@@ -80,13 +94,13 @@ impl PinDispatcher {
     fn input(&mut self, pin_label: char) -> bool {
         let mut is_high = false;
         match pin_label {
-            '1' => self.d13.set(Some(self.d13.take().unwrap().input(&mut is_high))),
-            '2' => self.d2.set(Some(self.d2.take().unwrap().input(&mut is_high))),
-            '3' => self.d3.set(Some(self.d3.take().unwrap().input(&mut is_high))),
-            '4' => self.d4.set(Some(self.d4.take().unwrap().input(&mut is_high))),
-            '5' => self.d5.set(Some(self.d5.take().unwrap().input(&mut is_high))),
-            '6' => self.d6.set(Some(self.d6.take().unwrap().input(&mut is_high))),
-            '7' => self.d7.set(Some(self.d7.take().unwrap().input(&mut is_high))),
+            '1' => input(&self.d13, &mut is_high),
+            '2' => input(&self.d2, &mut is_high),
+            '3' => input(&self.d3, &mut is_high),
+            '4' => input(&self.d4, &mut is_high),
+            '5' => input(&self.d5, &mut is_high),
+            '6' => input(&self.d6, &mut is_high),
+            '7' => input(&self.d7, &mut is_high),
             _ => unreachable!(),
         };
         is_high
