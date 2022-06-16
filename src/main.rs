@@ -57,7 +57,7 @@ where
 
 trait IOPin {
     fn output_state(&self, state: PinState);
-    fn input(&self, is_high: &mut bool);
+    fn input(&self) -> bool;
 }
 
 impl<T> IOPin for MutablePin<T>
@@ -68,8 +68,10 @@ where
         self.set(Some(self.take().unwrap().output_state(state)))
     }
 
-    fn input(&self, is_high: &mut bool) {
-        self.set(Some(self.take().unwrap().input(is_high)))
+    fn input(&self) -> bool {
+        let mut is_high = false;
+        self.set(Some(self.take().unwrap().input(&mut is_high)));
+        is_high
     }
 }
 
@@ -98,18 +100,16 @@ impl PinDispatcher {
     }
 
     fn input(&mut self, pin_label: char) -> bool {
-        let mut is_high = false;
         match pin_label {
-            '1' => self.d13.input(&mut is_high),
-            '2' => self.d2.input(&mut is_high),
-            '3' => self.d3.input(&mut is_high),
-            '4' => self.d4.input(&mut is_high),
-            '5' => self.d5.input(&mut is_high),
-            '6' => self.d6.input(&mut is_high),
-            '7' => self.d7.input(&mut is_high),
+            '1' => self.d13.input(),
+            '2' => self.d2.input(),
+            '3' => self.d3.input(),
+            '4' => self.d4.input(),
+            '5' => self.d5.input(),
+            '6' => self.d6.input(),
+            '7' => self.d7.input(),
             _ => unreachable!(),
-        };
-        is_high
+        }
     }
 }
 
