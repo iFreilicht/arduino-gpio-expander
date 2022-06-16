@@ -13,6 +13,8 @@ use arduino_hal::{
 use embedded_hal::digital::v2::{OutputPin, PinState};
 use panic_halt as _;
 
+use heapless::FnvIndexMap;
+
 enum Action {
     Output(PinState),
     Input,
@@ -75,7 +77,7 @@ where
     }
 }
 
-struct PinDispatcher {
+struct PinStore {
     d13: MutablePin<PB5>,
     d2: MutablePin<PD2>,
     d3: MutablePin<PD3>,
@@ -85,7 +87,26 @@ struct PinDispatcher {
     d7: MutablePin<PD7>,
 }
 
-impl PinDispatcher {
+type PinMap<'a> = FnvIndexMap<char, &'a mut dyn IOPin, 64>;
+
+struct PinDispatcher<'a> {
+    pin_map: PinMap<'a>,
+}
+
+impl<'a> PinDispatcher<'a> {
+    fn new(pin_list: &'a mut PinStore) -> Self {
+        let pin_map = PinMap::new();
+        let mut new_dispatcher = PinDispatcher { pin_map };
+        new_dispatcher.pin_map.insert('1', &mut pin_list.d13);
+        new_dispatcher.pin_map.insert('2', &mut pin_list.d2);
+        new_dispatcher.pin_map.insert('3', &mut pin_list.d3);
+        new_dispatcher.pin_map.insert('4', &mut pin_list.d4);
+        new_dispatcher.pin_map.insert('5', &mut pin_list.d5);
+        new_dispatcher.pin_map.insert('6', &mut pin_list.d6);
+        new_dispatcher.pin_map.insert('7', &mut pin_list.d7);
+        new_dispatcher
+    }
+
     fn output(&mut self, pin_label: char, state: PinState) {
         self.get_pin(pin_label).output_state(state);
     }
@@ -95,16 +116,7 @@ impl PinDispatcher {
     }
 
     fn get_pin(&mut self, pin_label: char) -> &mut dyn IOPin {
-        match pin_label {
-            '1' => &mut self.d13,
-            '2' => &mut self.d2,
-            '3' => &mut self.d3,
-            '4' => &mut self.d4,
-            '5' => &mut self.d5,
-            '6' => &mut self.d6,
-            '7' => &mut self.d7,
-            _ => unreachable!(),
-        }
+        *self.pin_map.get_mut(&pin_label).unwrap()
     }
 }
 
@@ -125,7 +137,7 @@ fn main() -> ! {
      * examples available.
      */
 
-    let mut pin_dispatcher = PinDispatcher {
+    let mut pin_list = PinStore {
         d13: new_pin(pins.d13),
         d2: new_pin(pins.d2),
         d3: new_pin(pins.d3),
@@ -134,6 +146,7 @@ fn main() -> ! {
         d6: new_pin(pins.d6),
         d7: new_pin(pins.d7),
     };
+    let mut pin_dispatcher = PinDispatcher::new(&mut pin_list);
 
     loop {
         let mut pin: Option<char> = None;
