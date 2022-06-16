@@ -153,10 +153,13 @@ fn main() -> ! {
             byte => ufmt::uwrite!(&mut serial, "Invalid action '{}'. ", byte).unwrap(),
         }
 
-        match serial.read_byte() as char {
-            '\n' => continue,
-            pin_num @ '1'..='7' => pin = Some(pin_num),
-            byte => ufmt::uwrite!(&mut serial, "Invalid pin '{}'. ", byte).unwrap(),
+        let maybe_pin = serial.read_byte() as char;
+        if maybe_pin == '\n' {
+            continue;
+        } else if pin_dispatcher.pin_map.contains_key(&maybe_pin) {
+            pin = Some(maybe_pin)
+        } else {
+            ufmt::uwrite!(&mut serial, "Invalid pin '{}'. ", maybe_pin).unwrap()
         }
 
         while serial.read_byte() as char != '\n' {
