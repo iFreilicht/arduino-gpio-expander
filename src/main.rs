@@ -87,27 +87,22 @@ struct PinDispatcher {
 
 impl PinDispatcher {
     fn output(&self, pin_label: char, state: PinState) {
-        match pin_label {
-            '1' => self.d13.output_state(state),
-            '2' => self.d2.output_state(state),
-            '3' => self.d3.output_state(state),
-            '4' => self.d4.output_state(state),
-            '5' => self.d5.output_state(state),
-            '6' => self.d6.output_state(state),
-            '7' => self.d7.output_state(state),
-            _ => unreachable!(),
-        };
+        self.get_pin(pin_label).output_state(state);
     }
 
     fn input(&mut self, pin_label: char) -> bool {
+        self.get_pin(pin_label).input()
+    }
+
+    fn get_pin(&self, pin_label: char) -> &dyn IOPin {
         match pin_label {
-            '1' => self.d13.input(),
-            '2' => self.d2.input(),
-            '3' => self.d3.input(),
-            '4' => self.d4.input(),
-            '5' => self.d5.input(),
-            '6' => self.d6.input(),
-            '7' => self.d7.input(),
+            '1' => &self.d13,
+            '2' => &self.d2,
+            '3' => &self.d3,
+            '4' => &self.d4,
+            '5' => &self.d5,
+            '6' => &self.d6,
+            '7' => &self.d7,
             _ => unreachable!(),
         }
     }
