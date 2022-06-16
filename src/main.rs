@@ -47,13 +47,21 @@ where
     }
 }
 
-struct MutablePin<T>(Cell<Option<StatefulPin<T>>>);
+struct MutablePin<T> {
+    pin: Cell<Option<StatefulPin<T>>>,
+    name: &'static str,
+}
 
-fn new_pin<T>(pin: Pin<Input<Floating>, T>) -> MutablePin<T>
+impl<T> MutablePin<T>
 where
     T: avr_hal_generic::port::PinOps,
 {
-    MutablePin(Cell::new(Some(StatefulPin::Input(pin.into_pull_up_input()))))
+    fn new(pin: Pin<Input<Floating>, T>, name: &'static str) -> Self {
+        Self {
+            pin: Cell::new(Some(StatefulPin::Input(pin.into_pull_up_input()))),
+            name,
+        }
+    }
 }
 
 impl<T> fmt::Debug for MutablePin<T>
@@ -61,7 +69,7 @@ where
     T: avr_hal_generic::port::PinOps,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("MutablePin").finish_non_exhaustive()
+        f.write_fmt(format_args!("MutablePin {}", self.name))
     }
 }
 
@@ -75,12 +83,12 @@ where
     T: avr_hal_generic::port::PinOps,
 {
     fn output_state(&mut self, state: PinState) {
-        self.0.set(Some(self.0.take().unwrap().output_state(state)))
+        self.pin.set(Some(self.pin.take().unwrap().output_state(state)))
     }
 
     fn input(&mut self) -> bool {
         let mut is_high = false;
-        self.0.set(Some(self.0.take().unwrap().input(&mut is_high)));
+        self.pin.set(Some(self.pin.take().unwrap().input(&mut is_high)));
         is_high
     }
 }
@@ -146,13 +154,13 @@ fn main() -> ! {
      */
 
     let mut pin_list = PinStore {
-        d13: new_pin(pins.d13),
-        d2: new_pin(pins.d2),
-        d3: new_pin(pins.d3),
-        d4: new_pin(pins.d4),
-        d5: new_pin(pins.d5),
-        d6: new_pin(pins.d6),
-        d7: new_pin(pins.d7),
+        d13: MutablePin::new(pins.d13, "D13"),
+        d2: MutablePin::new(pins.d2, "D2"),
+        d3: MutablePin::new(pins.d3, "D3"),
+        d4: MutablePin::new(pins.d4, "D4"),
+        d5: MutablePin::new(pins.d5, "D5"),
+        d6: MutablePin::new(pins.d6, "D6"),
+        d7: MutablePin::new(pins.d7, "D7"),
     };
     let mut pin_dispatcher = PinDispatcher::new(&mut pin_list);
 
