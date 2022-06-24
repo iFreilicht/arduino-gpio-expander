@@ -1,12 +1,12 @@
 [package]
-name = "rust-arduino-blink"
+name = "arduino-gpio-expander"
 version = "0.1.0"
 authors = ["Felix Uhl <felix.uhl@outlook.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [[bin]]
-name = "rust-arduino-blink"
+name = "arduino"
 test = false
 bench = false
 

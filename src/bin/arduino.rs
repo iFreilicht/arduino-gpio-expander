@@ -1,10 +1,8 @@
 #![no_std]
 #![no_main]
 
-mod actions;
-mod pins;
-use actions::Action;
-use pins::PinDispatcher;
+use arduino_gpio_expander::actions::Action;
+use arduino_gpio_expander::{add_pin, pins::PinDispatcher};
 
 use panic_halt as _;
 

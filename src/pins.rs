@@ -151,7 +151,7 @@ impl<'a, 'b> IntoIterator for &'a PinDispatcher<'b> {
 #[macro_export]
 macro_rules! add_pin {
     ($dispatcher:ident, $pins:ident.$name:ident, $tag:literal) => {
-        let mut $name = pins::MutablePin::new($pins.$name, stringify!($name));
+        let mut $name = $crate::pins::MutablePin::new($pins.$name, stringify!($name));
         $dispatcher.add_pin($tag, &mut $name);
     };
 }

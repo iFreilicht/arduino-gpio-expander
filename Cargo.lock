@@ -12,6 +12,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "arduino-gpio-expander"
+version = "0.1.0"
+dependencies = [
+ "arduino-hal",
+ "avr-hal-generic",
+ "critical-section 0.2.7 (git+https://github.com/iFreilicht/critical-section.git?rev=b92fd2190d53a683277844b072613d72b96e4d3f)",
+ "embedded-hal",
+ "heapless",
+ "nb 0.1.3",
+ "panic-halt",
+ "postcard",
+ "serde",
+ "ufmt",
+]
+
+[[package]]
 name = "arduino-hal"
 version = "0.1.0"
 source = "git+https://github.com/rahix/avr-hal?rev=d0d2f243bd3e10b49f6a78d44839a6caa8be7d43#d0d2f243bd3e10b49f6a78d44839a6caa8be7d43"
@@ -326,22 +342,6 @@ checksum = "88aa938cda42a0cf62a20cfe8d139ff1af20c2e681212b5b34adb5a58333f222"
 dependencies = [
  "lazy_static",
  "regex",
-]
-
-[[package]]
-name = "rust-arduino-blink"
-version = "0.1.0"
-dependencies = [
- "arduino-hal",
- "avr-hal-generic",
- "critical-section 0.2.7 (git+https://github.com/iFreilicht/critical-section.git?rev=b92fd2190d53a683277844b072613d72b96e4d3f)",
- "embedded-hal",
- "heapless",
- "nb 0.1.3",
- "panic-halt",
- "postcard",
- "serde",
- "ufmt",
 ]
 
 [[package]]
