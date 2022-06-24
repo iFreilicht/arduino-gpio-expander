@@ -87,6 +87,7 @@ where
 
 type PinMap<'a> = FnvIndexMap<char, &'a mut dyn IOPin, 64>;
 
+#[derive(Default)]
 pub struct PinDispatcher<'a> {
     pin_map: PinMap<'a>,
 }
