@@ -1,10 +1,27 @@
 #![no_std]
 #![no_main]
 
-use arduino_gpio_expander::actions::Action;
+use arduino_gpio_expander::actions::{Action, ReadByte};
 use arduino_gpio_expander::{add_pin, pins::PinDispatcher};
+use arduino_hal::{
+    hal::port::{PD0, PD1},
+    pac::USART0,
+    port::{
+        mode::{Input, Output},
+        Pin,
+    },
+    Usart,
+};
 
 use panic_halt as _;
+
+struct UnoSerial<'a>(&'a mut Usart<USART0, Pin<Input, PD0>, Pin<Output, PD1>>);
+
+impl<'a> ReadByte for UnoSerial<'a> {
+    fn read_byte(&mut self) -> u8 {
+        self.0.read_byte()
+    }
+}
 
 #[arduino_hal::entry]
 fn main() -> ! {
@@ -35,7 +52,7 @@ fn main() -> ! {
     add_pin!(pin_dispatcher, pins.a5, 'F');
 
     loop {
-        let action: postcard::Result<Action> = Action::from_serial(&mut serial);
+        let action: postcard::Result<Action> = Action::from_serial(&mut UnoSerial(&mut serial));
         match action {
             postcard::Result::Ok(action) => {
                 match action {

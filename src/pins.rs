@@ -1,3 +1,4 @@
+use super::actions::{PinLabel, PinState};
 use arduino_hal::hal::port::{
     mode::{Floating, Input, Output, PullUp},
     Pin,
@@ -5,14 +6,6 @@ use arduino_hal::hal::port::{
 use core::{cell::Cell, fmt};
 use embedded_hal::digital::v2::{self as hal_digital, OutputPin};
 use heapless::FnvIndexMap;
-use serde::{Deserialize, Serialize};
-
-/// Simply a wrapper for [`hal_digital::PinState`] so we can implement Serialize and Deserialize on it
-#[derive(Serialize, Deserialize)]
-pub enum PinState {
-    High,
-    Low,
-}
 
 impl From<PinState> for hal_digital::PinState {
     fn from(state: PinState) -> Self {
@@ -101,8 +94,6 @@ where
         self.name
     }
 }
-
-pub type PinLabel = char;
 
 type PinMap<'a> = FnvIndexMap<PinLabel, &'a mut dyn IOPin, 64>;
 

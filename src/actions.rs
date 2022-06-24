@@ -1,16 +1,13 @@
-use super::pins::{PinLabel, PinState};
-use arduino_hal::{
-    hal::port::{PD0, PD1},
-    pac::USART0,
-    port::{
-        mode::{Input, Output},
-        Pin,
-    },
-    Usart,
-};
-
 use postcard::de_flavors::Flavor;
 use serde::{Deserialize, Serialize};
+
+pub type PinLabel = char;
+
+#[derive(Serialize, Deserialize)]
+pub enum PinState {
+    High,
+    Low,
+}
 
 #[derive(Serialize, Deserialize)]
 pub enum Action {
@@ -22,8 +19,15 @@ pub enum Action {
 /// Maximum size a serialized [`Action`] can have on the wire, in bytes
 const MAX_ACTION_WIRE_SIZE: usize = 32;
 
+pub trait ReadByte {
+    fn read_byte(&mut self) -> u8;
+}
+
 impl Action {
-    pub fn from_serial(serial: &mut Usart<USART0, Pin<Input, PD0>, Pin<Output, PD1>>) -> postcard::Result<Action> {
+    pub fn from_serial<T>(serial: &mut T) -> postcard::Result<Action>
+    where
+        T: ReadByte,
+    {
         let mut buffer = [0u8; MAX_ACTION_WIRE_SIZE];
         let buffered_serial = BufferedSerial {
             serial,
@@ -35,14 +39,17 @@ impl Action {
     }
 }
 
-struct BufferedSerial<'a> {
-    serial: &'a mut Usart<USART0, Pin<Input, PD0>, Pin<Output, PD1>>,
+struct BufferedSerial<'a, T> {
+    serial: &'a mut T,
     buffer: &'a mut [u8],
 }
 
-impl<'de> Flavor<'de> for BufferedSerial<'de> {
+impl<'de, T> Flavor<'de> for BufferedSerial<'de, T>
+where
+    T: ReadByte,
+{
     type Remainder = ();
-    type Source = BufferedSerial<'de>;
+    type Source = BufferedSerial<'de, T>;
     fn pop(&mut self) -> postcard::Result<u8> {
         postcard::Result::Ok(self.serial.read_byte())
     }
