@@ -3,8 +3,25 @@ use arduino_hal::hal::port::{
     Pin,
 };
 use core::{cell::Cell, fmt};
-use embedded_hal::digital::v2::{OutputPin, PinState};
+use embedded_hal::digital::v2::{self as hal_digital, OutputPin};
 use heapless::FnvIndexMap;
+use serde::{Deserialize, Serialize};
+
+/// Simply a wrapper for [`hal_digital::PinState`] so we can implement Serialize and Deserialize on it
+#[derive(Serialize, Deserialize)]
+pub enum PinState {
+    High,
+    Low,
+}
+
+impl From<PinState> for hal_digital::PinState {
+    fn from(state: PinState) -> Self {
+        match state {
+            PinState::High => Self::High,
+            PinState::Low => Self::Low,
+        }
+    }
+}
 
 enum StatefulPin<T> {
     Input(Pin<Input<PullUp>, T>),
@@ -20,7 +37,7 @@ where
             StatefulPin::Input(input_pin) => input_pin.into_output(),
             StatefulPin::Output(output_pin) => output_pin,
         };
-        output_pin.set_state(state).unwrap();
+        output_pin.set_state(state.into()).unwrap();
         StatefulPin::Output(output_pin)
     }
 
@@ -85,7 +102,9 @@ where
     }
 }
 
-type PinMap<'a> = FnvIndexMap<char, &'a mut dyn IOPin, 64>;
+pub type PinLabel = char;
+
+type PinMap<'a> = FnvIndexMap<PinLabel, &'a mut dyn IOPin, 64>;
 
 #[derive(Default)]
 pub struct PinDispatcher<'a> {
@@ -97,26 +116,26 @@ impl<'a> PinDispatcher<'a> {
         PinDispatcher { pin_map: PinMap::new() }
     }
 
-    pub fn add_pin(&mut self, pin_label: char, pin: &'a mut dyn IOPin) {
+    pub fn add_pin(&mut self, pin_label: PinLabel, pin: &'a mut dyn IOPin) {
         let maybe_previous_pin = self.pin_map.insert(pin_label, pin).unwrap();
         if maybe_previous_pin.is_some() {
             panic!("Inserting pin failed because the pin_label was already in use.")
         }
     }
 
-    pub fn output(&mut self, pin_label: char, state: PinState) {
+    pub fn output(&mut self, pin_label: PinLabel, state: PinState) {
         self.get_pin(pin_label).output_state(state);
     }
 
-    pub fn input(&mut self, pin_label: char) -> bool {
+    pub fn input(&mut self, pin_label: PinLabel) -> bool {
         self.get_pin(pin_label).input()
     }
 
-    pub fn has_pin(&self, pin_label: char) -> bool {
+    pub fn has_pin(&self, pin_label: PinLabel) -> bool {
         self.pin_map.contains_key(&pin_label)
     }
 
-    fn get_pin(&mut self, pin_label: char) -> &mut dyn IOPin {
+    fn get_pin(&mut self, pin_label: PinLabel) -> &mut dyn IOPin {
         *self.pin_map.get_mut(&pin_label).unwrap()
     }
 }
