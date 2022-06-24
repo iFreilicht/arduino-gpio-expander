@@ -88,7 +88,7 @@ where
 type PinMap<'a> = FnvIndexMap<char, &'a mut dyn IOPin, 64>;
 
 pub struct PinDispatcher<'a> {
-    pub pin_map: PinMap<'a>,
+    pin_map: PinMap<'a>,
 }
 
 impl<'a> PinDispatcher<'a> {
@@ -111,8 +111,20 @@ impl<'a> PinDispatcher<'a> {
         self.get_pin(pin_label).input()
     }
 
+    pub fn has_pin(&self, pin_label: char) -> bool {
+        self.pin_map.contains_key(&pin_label)
+    }
+
     fn get_pin(&mut self, pin_label: char) -> &mut dyn IOPin {
         *self.pin_map.get_mut(&pin_label).unwrap()
+    }
+}
+
+impl<'a, 'b> IntoIterator for &'a PinDispatcher<'b> {
+    type Item = <&'a PinMap<'b> as IntoIterator>::Item;
+    type IntoIter = <&'a PinMap<'b> as IntoIterator>::IntoIter;
+    fn into_iter(self) -> Self::IntoIter {
+        self.pin_map.iter()
     }
 }
 

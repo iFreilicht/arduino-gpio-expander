@@ -59,7 +59,7 @@ fn main() -> ! {
             let maybe_pin = serial.read_byte() as char;
             if maybe_pin == '\n' {
                 continue;
-            } else if pin_dispatcher.pin_map.contains_key(&maybe_pin) {
+            } else if pin_dispatcher.has_pin(maybe_pin) {
                 pin = Some(maybe_pin)
             } else {
                 ufmt::uwrite!(&mut serial, "Invalid pin '{}'. ", maybe_pin).unwrap()
@@ -85,7 +85,7 @@ fn main() -> ! {
                 ufmt::uwriteln!(&mut serial, "Done.").unwrap();
             }
             (_, Some(Action::List)) => {
-                for (pin_label, pin) in &pin_dispatcher.pin_map {
+                for (pin_label, pin) in &pin_dispatcher {
                     ufmt::uwriteln!(&mut serial, "{}: {}", pin_label, pin.name()).unwrap()
                 }
             }
