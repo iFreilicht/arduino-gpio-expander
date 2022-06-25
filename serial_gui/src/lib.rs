@@ -1,9 +1,20 @@
+use egui::ComboBox;
 use gpio_actions::{Action, PinState};
+
+#[derive(serde::Deserialize, serde::Serialize, Default, Debug, PartialEq, Eq, PartialOrd)]
+enum ActionType {
+    #[default]
+    Output,
+    Input,
+    List,
+}
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize, Default)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
-pub struct TemplateApp {}
+pub struct TemplateApp {
+    selected_action_type: ActionType,
+}
 
 impl TemplateApp {
     /// Called once before the first frame.
@@ -35,6 +46,14 @@ impl eframe::App for TemplateApp {
         let deserialized_action: Action = postcard::from_bytes(&serialized_action).expect("Failed to deserialize!");
 
         egui::CentralPanel::default().show(ctx, |ui| {
+            ComboBox::from_label("action_type")
+                .selected_text(format!("{:?}", self.selected_action_type))
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(&mut self.selected_action_type, ActionType::Output, "Output");
+                    ui.selectable_value(&mut self.selected_action_type, ActionType::Input, "Input");
+                    ui.selectable_value(&mut self.selected_action_type, ActionType::List, "List");
+                });
+
             ui.heading("Serial GUI");
             egui::warn_if_debug_build(ui);
             ui.heading("Action object");
