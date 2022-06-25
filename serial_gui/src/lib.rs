@@ -1,4 +1,4 @@
-use egui::ComboBox;
+use egui::{ComboBox, TextEdit};
 use gpio_actions::{Action, PinState};
 
 #[derive(serde::Deserialize, serde::Serialize, Default, Debug, PartialEq, Eq, PartialOrd)]
@@ -18,6 +18,8 @@ pub struct TemplateApp {
     pin_high: bool,
 }
 
+const DEFAULT_PIN_LABEL: char = '?';
+
 impl TemplateApp {
     /// Called once before the first frame.
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
@@ -34,6 +36,18 @@ impl TemplateApp {
     }
 }
 
+fn single_character_text<S>(ui: &mut egui::Ui, text: &mut S)
+where
+    S: egui::TextBuffer,
+{
+    text.delete_char_range(1..usize::MAX);
+    ui.add(
+        TextEdit::singleline(text)
+            .hint_text(DEFAULT_PIN_LABEL.to_string())
+            .desired_width(10.0),
+    );
+}
+
 impl eframe::App for TemplateApp {
     /// Called by the frame work to save state before shutdown.
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
@@ -47,26 +61,28 @@ impl eframe::App for TemplateApp {
             ui.heading("Serial GUI");
             egui::warn_if_debug_build(ui);
 
-            ComboBox::from_label("")
-                .selected_text(format!("{:?}", self.selected_action_type))
-                .show_ui(ui, |ui| {
-                    ui.selectable_value(&mut self.selected_action_type, ActionType::Output, "Output");
-                    ui.selectable_value(&mut self.selected_action_type, ActionType::Input, "Input");
-                    ui.selectable_value(&mut self.selected_action_type, ActionType::List, "List");
-                });
+            ui.horizontal(|ui| {
+                ComboBox::from_label("")
+                    .selected_text(format!("{:?}", self.selected_action_type))
+                    .show_ui(ui, |ui| {
+                        ui.selectable_value(&mut self.selected_action_type, ActionType::Output, "Output");
+                        ui.selectable_value(&mut self.selected_action_type, ActionType::Input, "Input");
+                        ui.selectable_value(&mut self.selected_action_type, ActionType::List, "List");
+                    });
 
-            match self.selected_action_type {
-                ActionType::Output => {
-                    ui.text_edit_singleline(&mut self.pin_label);
-                    ui.checkbox(&mut self.pin_high, "Set pin high");
-                }
-                ActionType::Input => {
-                    ui.text_edit_singleline(&mut self.pin_label);
-                }
-                ActionType::List => (),
-            };
+                match self.selected_action_type {
+                    ActionType::Output => {
+                        single_character_text(ui, &mut self.pin_label);
+                        ui.checkbox(&mut self.pin_high, "Set pin high");
+                    }
+                    ActionType::Input => {
+                        single_character_text(ui, &mut self.pin_label);
+                    }
+                    ActionType::List => (),
+                };
+            });
 
-            let pin_label = self.pin_label.chars().next().unwrap_or('?');
+            let pin_label = self.pin_label.chars().next().unwrap_or(DEFAULT_PIN_LABEL);
 
             let action = match self.selected_action_type {
                 ActionType::Output => {
@@ -78,13 +94,20 @@ impl eframe::App for TemplateApp {
 
             let serialized_action = postcard::to_stdvec(&action).expect("Failed to serialize action!");
             let deserialized_action: Action = postcard::from_bytes(&serialized_action).expect("Failed to deserialize!");
-
-            ui.heading("Action object");
-            ui.label(format!("{:?}", action));
-            ui.heading("in hex:");
-            ui.label(format!("{:x?}", serialized_action));
-            ui.heading("deserialized again:");
-            ui.label(format!("{:?}", deserialized_action));
+            ui.horizontal(|ui| {
+                ui.vertical(|ui| {
+                    ui.heading("Action object");
+                    ui.label(format!("{:?}", action));
+                });
+                ui.vertical(|ui| {
+                    ui.heading("in hex:");
+                    ui.label(format!("{:02x?}", serialized_action));
+                });
+                ui.vertical(|ui| {
+                    ui.heading("deserialized again:");
+                    ui.label(format!("{:?}", deserialized_action))
+                });
+            });
         });
     }
 }
