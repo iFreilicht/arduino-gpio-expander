@@ -1,5 +1,8 @@
+use std::time::Duration;
+
 use egui::{ComboBox, TextEdit};
 use gpio_actions::{Action, PinState};
+use serialport::{SerialPort, SerialPortInfo};
 
 #[derive(serde::Deserialize, serde::Serialize, Default, Debug, PartialEq, Eq, PartialOrd)]
 enum ActionType {
@@ -16,6 +19,8 @@ pub struct TemplateApp {
     selected_action_type: ActionType,
     pin_label: String,
     pin_high: bool,
+    #[serde(skip)]
+    serial_port: Option<serialport::TTYPort>,
 }
 
 const DEFAULT_PIN_LABEL: char = '?';
@@ -46,6 +51,17 @@ where
             .hint_text(DEFAULT_PIN_LABEL.to_string())
             .desired_width(10.0),
     );
+}
+
+fn format_port(port: &SerialPortInfo) -> String {
+    let path = port.port_name.clone();
+    let name;
+    if let serialport::SerialPortType::UsbPort(port_info) = port.port_type.clone() {
+        name = port_info.product.unwrap_or_default();
+    } else {
+        name = format!("{:?}", port.port_type)
+    }
+    format!("{} ({})", path, name)
 }
 
 impl eframe::App for TemplateApp {
@@ -109,8 +125,36 @@ impl eframe::App for TemplateApp {
                 });
             });
 
-            let ports = serialport::available_ports().expect("No serial ports found!");
-            ui.collapsing("Serial ports", |ui| ui.label(format!("{:#?}", ports)));
+            let mut disconnect = false;
+            if let Some(serial_port) = &mut self.serial_port {
+                ui.heading("Serial connection");
+                ui.horizontal(|ui| {
+                    ui.label(format!("Connected to {}", serial_port.name().unwrap_or_default()));
+                    if ui.button("Disconnect").clicked() {
+                        disconnect = true;
+                    }
+                });
+            } else {
+                ui.heading("Serial ports");
+                let ports = serialport::available_ports().expect("No serial ports found!");
+                for port in ports {
+                    ui.horizontal(|ui| {
+                        ui.label(format_port(&port));
+                        if let serialport::SerialPortType::UsbPort(_) = port.port_type.clone() {
+                            if ui.button("Connect").clicked() {
+                                let tty_port = serialport::new(port.port_name, 57600)
+                                    .timeout(Duration::from_millis(10))
+                                    .open_native()
+                                    .expect("Failed to open serial port!");
+                                self.serial_port = Some(tty_port);
+                            }
+                        };
+                    });
+                }
+            }
+            if disconnect {
+                self.serial_port = None;
+            }
         });
     }
 }
