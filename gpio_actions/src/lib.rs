@@ -6,10 +6,11 @@ use serde::{Deserialize, Serialize};
 
 pub type PinLabel = char;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 pub enum PinState {
-    High,
+    #[default]
     Low,
+    High,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
