@@ -19,14 +19,10 @@ pub enum Action {
 /// Maximum size a serialized [`Action`] can have on the wire, in bytes
 const MAX_ACTION_WIRE_SIZE: usize = 32;
 
-pub trait ReadByte {
-    fn read_byte(&mut self) -> u8;
-}
-
 impl Action {
     pub fn from_serial<T>(serial: &mut T) -> postcard::Result<Action>
     where
-        T: ReadByte,
+        T: Iterator<Item = u8>,
     {
         let mut buffer = [0u8; MAX_ACTION_WIRE_SIZE];
         let buffered_serial = BufferedSerial {
@@ -44,20 +40,33 @@ struct BufferedSerial<'a, T> {
     buffer: &'a mut [u8],
 }
 
+trait OptionToPostcardResult<T> {
+    fn into_postcard_result(self) -> postcard::Result<T>;
+}
+
+impl OptionToPostcardResult<u8> for Option<u8> {
+    fn into_postcard_result(self) -> postcard::Result<u8> {
+        match self {
+            Some(byte) => postcard::Result::Ok(byte),
+            None => postcard::Result::Err(postcard::Error::DeserializeUnexpectedEnd),
+        }
+    }
+}
+
 impl<'de, T> Flavor<'de> for BufferedSerial<'de, T>
 where
-    T: ReadByte,
+    T: Iterator<Item = u8>,
 {
     type Remainder = ();
     type Source = BufferedSerial<'de, T>;
     fn pop(&mut self) -> postcard::Result<u8> {
-        postcard::Result::Ok(self.serial.read_byte())
+        self.serial.next().into_postcard_result()
     }
 
     fn try_take_n(&mut self, ct: usize) -> postcard::Result<&'de [u8]> {
         let mut end_of_slice = 0;
         for i in 0..ct {
-            self.buffer[i] = self.serial.read_byte();
+            self.buffer[i] = self.serial.next().into_postcard_result()?;
             end_of_slice += 1;
         }
         // Split the buffer so the result can use the bytes we just put into the buffer. This is necessary because

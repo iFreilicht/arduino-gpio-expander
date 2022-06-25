@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 
-use arduino_gpio_expander::actions::{Action, ReadByte};
+use arduino_gpio_expander::actions::Action;
 use arduino_gpio_expander::{add_pin, pins::PinDispatcher};
 use arduino_hal::{
     hal::port::{PD0, PD1},
@@ -17,9 +17,10 @@ use panic_halt as _;
 
 struct UnoSerial<'a>(&'a mut Usart<USART0, Pin<Input, PD0>, Pin<Output, PD1>>);
 
-impl<'a> ReadByte for UnoSerial<'a> {
-    fn read_byte(&mut self) -> u8 {
-        self.0.read_byte()
+impl<'a> Iterator for UnoSerial<'a> {
+    type Item = u8;
+    fn next(&mut self) -> Option<u8> {
+        Some(self.0.read_byte())
     }
 }
 
