@@ -108,6 +108,9 @@ impl eframe::App for TemplateApp {
                     ui.label(format!("{:?}", deserialized_action))
                 });
             });
+
+            let ports = serialport::available_ports().expect("No serial ports found!");
+            ui.collapsing("Serial ports", |ui| ui.label(format!("{:#?}", ports)));
         });
     }
 }
