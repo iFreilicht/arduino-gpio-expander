@@ -46,6 +46,23 @@ impl TemplateApp {
 
         Default::default()
     }
+
+    fn serial_output_text(&mut self, ui: &mut egui::Ui, lines: usize) {
+        let serial_port = self.serial_port.as_mut().expect("asdf");
+        let mut new_output = [0_u8; 32];
+        self.bytes_read += serial_port.read(&mut new_output).unwrap_or(0);
+        ui.label(format!("Bytes read: {}", self.bytes_read));
+        self.serial_output += &String::from_utf8_lossy(&new_output);
+        let mut last_lines = self.serial_output.lines().rev().take(lines).collect::<Vec<&str>>();
+        last_lines.reverse();
+        self.serial_output = last_lines.join("\n");
+
+        ui.add(
+            TextEdit::multiline(&mut self.serial_output)
+                .interactive(false)
+                .desired_rows(lines),
+        );
+    }
 }
 
 fn single_character_text<S>(ui: &mut egui::Ui, text: &mut S)
@@ -58,13 +75,6 @@ where
             .hint_text(DEFAULT_PIN_LABEL.to_string())
             .desired_width(10.0),
     );
-}
-
-fn serial_output_text<S>(ui: &mut egui::Ui, text: &mut S)
-where
-    S: egui::TextBuffer,
-{
-    ui.add(TextEdit::multiline(text).interactive(false).desired_rows(20));
 }
 
 fn format_port(port: &SerialPortInfo) -> String {
@@ -155,11 +165,7 @@ impl eframe::App for TemplateApp {
                         .expect("Failed to send action!");
                 }
 
-                let mut new_output = [0_u8; 32];
-                self.bytes_read += serial_port.read(&mut new_output).unwrap_or(0);
-                ui.label(format!("Bytes read: {}", self.bytes_read));
-                self.serial_output += &String::from_utf8_lossy(&new_output);
-                serial_output_text(ui, &mut self.serial_output);
+                self.serial_output_text(ui, 30);
             } else {
                 ui.heading("Serial ports");
                 let ports = serialport::available_ports().expect("No serial ports found!");
