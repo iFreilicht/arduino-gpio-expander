@@ -1,4 +1,7 @@
-use std::{io::Write, time::Duration};
+use std::{
+    io::{Read, Write},
+    time::Duration,
+};
 
 use egui::{ComboBox, TextEdit};
 use gpio_actions::{Action, PinState};
@@ -21,6 +24,10 @@ pub struct TemplateApp {
     pin_high: bool,
     #[serde(skip)]
     serial_port: Option<serialport::TTYPort>,
+    #[serde(skip)]
+    serial_output: String,
+    #[serde(skip)]
+    bytes_read: usize,
 }
 
 const DEFAULT_PIN_LABEL: char = '?';
@@ -51,6 +58,13 @@ where
             .hint_text(DEFAULT_PIN_LABEL.to_string())
             .desired_width(10.0),
     );
+}
+
+fn serial_output_text<S>(ui: &mut egui::Ui, text: &mut S)
+where
+    S: egui::TextBuffer,
+{
+    ui.add(TextEdit::multiline(text).interactive(false).desired_rows(20));
 }
 
 fn format_port(port: &SerialPortInfo) -> String {
@@ -140,6 +154,12 @@ impl eframe::App for TemplateApp {
                         .write_all(&serialized_action)
                         .expect("Failed to send action!");
                 }
+
+                let mut new_output = [0_u8; 32];
+                self.bytes_read += serial_port.read(&mut new_output).unwrap_or(0);
+                ui.label(format!("Bytes read: {}", self.bytes_read));
+                self.serial_output += &String::from_utf8_lossy(&new_output);
+                serial_output_text(ui, &mut self.serial_output);
             } else {
                 ui.heading("Serial ports");
                 let ports = serialport::available_ports().expect("No serial ports found!");
@@ -159,6 +179,8 @@ impl eframe::App for TemplateApp {
                 }
             }
             if disconnect {
+                self.serial_output = String::new();
+                self.bytes_read = 0;
                 self.serial_port = None;
             }
         });
