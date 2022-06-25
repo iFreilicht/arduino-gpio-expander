@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{io::Write, time::Duration};
 
 use egui::{ComboBox, TextEdit};
 use gpio_actions::{Action, PinState};
@@ -134,6 +134,12 @@ impl eframe::App for TemplateApp {
                         disconnect = true;
                     }
                 });
+
+                if ui.button("Send action").clicked() {
+                    serial_port
+                        .write_all(&serialized_action)
+                        .expect("Failed to send action!");
+                }
             } else {
                 ui.heading("Serial ports");
                 let ports = serialport::available_ports().expect("No serial ports found!");
