@@ -14,6 +14,8 @@ enum ActionType {
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct TemplateApp {
     selected_action_type: ActionType,
+    pin_label: String,
+    pin_high: bool,
 }
 
 impl TemplateApp {
@@ -41,12 +43,11 @@ impl eframe::App for TemplateApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let action = Action::Output('4', PinState::High);
-        let serialized_action = postcard::to_stdvec(&action).expect("Failed to serialize action!");
-        let deserialized_action: Action = postcard::from_bytes(&serialized_action).expect("Failed to deserialize!");
-
         egui::CentralPanel::default().show(ctx, |ui| {
-            ComboBox::from_label("action_type")
+            ui.heading("Serial GUI");
+            egui::warn_if_debug_build(ui);
+
+            ComboBox::from_label("")
                 .selected_text(format!("{:?}", self.selected_action_type))
                 .show_ui(ui, |ui| {
                     ui.selectable_value(&mut self.selected_action_type, ActionType::Output, "Output");
@@ -54,8 +55,30 @@ impl eframe::App for TemplateApp {
                     ui.selectable_value(&mut self.selected_action_type, ActionType::List, "List");
                 });
 
-            ui.heading("Serial GUI");
-            egui::warn_if_debug_build(ui);
+            match self.selected_action_type {
+                ActionType::Output => {
+                    ui.text_edit_singleline(&mut self.pin_label);
+                    ui.checkbox(&mut self.pin_high, "Set pin high");
+                }
+                ActionType::Input => {
+                    ui.text_edit_singleline(&mut self.pin_label);
+                }
+                ActionType::List => (),
+            };
+
+            let pin_label = self.pin_label.chars().next().unwrap_or('?');
+
+            let action = match self.selected_action_type {
+                ActionType::Output => {
+                    Action::Output(pin_label, if self.pin_high { PinState::High } else { PinState::Low })
+                }
+                ActionType::Input => Action::Input(pin_label),
+                ActionType::List => Action::List,
+            };
+
+            let serialized_action = postcard::to_stdvec(&action).expect("Failed to serialize action!");
+            let deserialized_action: Action = postcard::from_bytes(&serialized_action).expect("Failed to deserialize!");
+
             ui.heading("Action object");
             ui.label(format!("{:?}", action));
             ui.heading("in hex:");
