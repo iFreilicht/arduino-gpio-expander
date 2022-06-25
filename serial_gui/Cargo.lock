@@ -1397,6 +1397,7 @@ dependencies = [
  "eframe",
  "egui",
  "gpio-actions",
+ "postcard",
  "serde",
  "tracing-subscriber",
 ]

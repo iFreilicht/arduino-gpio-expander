@@ -16,3 +16,10 @@ tracing-subscriber = "0.3"
 
 [dependencies.gpio-actions]
 path = "../gpio_actions"
+
+[dependencies.postcard]
+# Postcard 1.0.0 is not compatible with 16-bit or 8-bit architectures yet
+# If this PR gets merged and released, you can turn postcard into a regular dependency again: https://github.com/jamesmunns/postcard/pull/64
+git = "https://github.com/iFreilicht/postcard"
+rev = "c4b82bf17437129e8c94330431ff7c943bf54ce8"
+features = ["use-std"]
