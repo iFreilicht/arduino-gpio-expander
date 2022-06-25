@@ -1,17 +1,18 @@
 #![no_std]
 
+use core::fmt::Debug;
 use postcard::de_flavors::Flavor;
 use serde::{Deserialize, Serialize};
 
 pub type PinLabel = char;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum PinState {
     High,
     Low,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum Action {
     Output(PinLabel, PinState),
     Input(PinLabel),
