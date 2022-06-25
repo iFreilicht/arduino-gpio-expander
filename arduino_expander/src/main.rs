@@ -1,8 +1,7 @@
 #![no_std]
 #![no_main]
 
-use arduino_gpio_expander::actions::{try_action_from_iter, Action};
-use arduino_gpio_expander::{add_pin, pins::PinDispatcher};
+mod pins;
 use arduino_hal::{
     hal::port::{PD0, PD1},
     pac::USART0,
@@ -12,6 +11,8 @@ use arduino_hal::{
     },
     Usart,
 };
+use gpio_actions::{try_action_from_iter, Action};
+use pins::PinDispatcher;
 
 use panic_halt as _;
 

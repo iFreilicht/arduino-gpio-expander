@@ -1,3 +1,5 @@
+#![no_std]
+
 use postcard::de_flavors::Flavor;
 use serde::{Deserialize, Serialize};
 

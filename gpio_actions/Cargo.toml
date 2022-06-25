@@ -1,0 +1,18 @@
+[package]
+name = "gpio-actions"
+version = "0.1.0"
+authors = ["Felix Uhl <felix.uhl@outlook.com>"]
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+heapless = "0.7.14"
+serde = { version = "1.0", default-features = false, features = ["derive"] }
+
+[dependencies.postcard]
+# Postcard 1.0.0 is not compatible with 16-bit or 8-bit architectures yet
+# If this PR gets merged and released, you can turn postcard into a regular dependency again: https://github.com/jamesmunns/postcard/pull/64
+git = "https://github.com/iFreilicht/postcard"
+rev = "c4b82bf17437129e8c94330431ff7c943bf54ce8"

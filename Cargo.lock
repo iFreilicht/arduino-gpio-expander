@@ -12,18 +12,18 @@ dependencies = [
 ]
 
 [[package]]
-name = "arduino-gpio-expander"
+name = "arduino-expander"
 version = "0.1.0"
 dependencies = [
  "arduino-hal",
  "avr-hal-generic",
  "critical-section 0.2.7 (git+https://github.com/iFreilicht/critical-section.git?rev=b92fd2190d53a683277844b072613d72b96e4d3f)",
  "embedded-hal",
+ "gpio-actions",
  "heapless",
  "nb 0.1.3",
  "panic-halt",
  "postcard",
- "serde",
  "ufmt",
 ]
 
@@ -198,6 +198,15 @@ checksum = "35949884794ad573cf46071e41c9b60efb0cb311e3ca01f7af807af1debc66ff"
 dependencies = [
  "nb 0.1.3",
  "void",
+]
+
+[[package]]
+name = "gpio-actions"
+version = "0.1.0"
+dependencies = [
+ "heapless",
+ "postcard",
+ "serde",
 ]
 
 [[package]]

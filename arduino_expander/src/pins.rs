@@ -1,18 +1,16 @@
-use super::actions::{PinLabel, PinState};
 use arduino_hal::hal::port::{
     mode::{Floating, Input, Output, PullUp},
     Pin,
 };
 use core::{cell::Cell, fmt};
 use embedded_hal::digital::v2::{self as hal_digital, OutputPin};
+use gpio_actions::{PinLabel, PinState};
 use heapless::FnvIndexMap;
 
-impl From<PinState> for hal_digital::PinState {
-    fn from(state: PinState) -> Self {
-        match state {
-            PinState::High => Self::High,
-            PinState::Low => Self::Low,
-        }
+fn convert_state(state: PinState) -> hal_digital::PinState {
+    match state {
+        PinState::High => hal_digital::PinState::High,
+        PinState::Low => hal_digital::PinState::Low,
     }
 }
 
@@ -30,7 +28,7 @@ where
             StatefulPin::Input(input_pin) => input_pin.into_output(),
             StatefulPin::Output(output_pin) => output_pin,
         };
-        output_pin.set_state(state.into()).unwrap();
+        output_pin.set_state(convert_state(state)).unwrap();
         StatefulPin::Output(output_pin)
     }
 
