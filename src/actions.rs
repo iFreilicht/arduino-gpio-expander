@@ -19,24 +19,22 @@ pub enum Action {
 /// Maximum size a serialized [`Action`] can have on the wire, in bytes
 const MAX_ACTION_WIRE_SIZE: usize = 32;
 
-impl Action {
-    pub fn from_serial<T>(serial: &mut T) -> postcard::Result<Action>
-    where
-        T: Iterator<Item = u8>,
-    {
-        let mut buffer = [0u8; MAX_ACTION_WIRE_SIZE];
-        let buffered_serial = BufferedSerial {
-            serial,
-            buffer: &mut buffer,
-        };
-        let mut deserializer = postcard::Deserializer::from_flavor(buffered_serial);
-        let t = Action::deserialize(&mut deserializer)?;
-        postcard::Result::Ok(t)
-    }
+pub fn try_action_from_iter<T>(iter: &mut T) -> postcard::Result<Action>
+where
+    T: Iterator<Item = u8>,
+{
+    let mut buffer = [0u8; MAX_ACTION_WIRE_SIZE];
+    let buffered_iter = BufferedIterator {
+        iter,
+        buffer: &mut buffer,
+    };
+    let mut deserializer = postcard::Deserializer::from_flavor(buffered_iter);
+    let t = Action::deserialize(&mut deserializer)?;
+    postcard::Result::Ok(t)
 }
 
-struct BufferedSerial<'a, T> {
-    serial: &'a mut T,
+struct BufferedIterator<'a, T> {
+    iter: &'a mut T,
     buffer: &'a mut [u8],
 }
 
@@ -53,20 +51,20 @@ impl OptionToPostcardResult<u8> for Option<u8> {
     }
 }
 
-impl<'de, T> Flavor<'de> for BufferedSerial<'de, T>
+impl<'de, T> Flavor<'de> for BufferedIterator<'de, T>
 where
     T: Iterator<Item = u8>,
 {
     type Remainder = ();
-    type Source = BufferedSerial<'de, T>;
+    type Source = BufferedIterator<'de, T>;
     fn pop(&mut self) -> postcard::Result<u8> {
-        self.serial.next().into_postcard_result()
+        self.iter.next().into_postcard_result()
     }
 
     fn try_take_n(&mut self, ct: usize) -> postcard::Result<&'de [u8]> {
         let mut end_of_slice = 0;
         for i in 0..ct {
-            self.buffer[i] = self.serial.next().into_postcard_result()?;
+            self.buffer[i] = self.iter.next().into_postcard_result()?;
             end_of_slice += 1;
         }
         // Split the buffer so the result can use the bytes we just put into the buffer. This is necessary because

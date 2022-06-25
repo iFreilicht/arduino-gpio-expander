@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 
-use arduino_gpio_expander::actions::Action;
+use arduino_gpio_expander::actions::{try_action_from_iter, Action};
 use arduino_gpio_expander::{add_pin, pins::PinDispatcher};
 use arduino_hal::{
     hal::port::{PD0, PD1},
@@ -53,8 +53,7 @@ fn main() -> ! {
     add_pin!(pin_dispatcher, pins.a5, 'F');
 
     loop {
-        let action: postcard::Result<Action> = Action::from_serial(&mut UnoSerial(&mut serial));
-        match action {
+        match try_action_from_iter(&mut UnoSerial(&mut serial)) {
             postcard::Result::Ok(action) => {
                 match action {
                     Action::Output(pin_label, state) => pin_dispatcher.output(pin_label, state),
