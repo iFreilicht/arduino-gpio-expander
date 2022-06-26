@@ -1,0 +1,19 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "serial_gui"
+		},
+		{
+			"path": "gpio_actions"
+		},
+		{
+			"path": "arduino_expander"
+		}
+	],
+	"settings": {
+		"rust-analyzer.checkOnSave.allTargets": false
+	}
+}
