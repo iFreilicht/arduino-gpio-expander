@@ -1,10 +1,11 @@
 use std::{
+    collections::VecDeque,
     io::{Read, Write},
     time::Duration,
 };
 
 use egui::{ComboBox, TextEdit};
-use gpio_actions::{Action, PinState};
+use gpio_actions::{Action, PinState, Response};
 use serialport::{SerialPort, SerialPortInfo};
 
 #[derive(serde::Deserialize, serde::Serialize, Default, Debug, PartialEq, Eq, PartialOrd)]
@@ -25,7 +26,7 @@ pub struct TemplateApp {
     #[serde(skip)]
     serial_port: Option<serialport::TTYPort>,
     #[serde(skip)]
-    serial_output: String,
+    serial_responses: VecDeque<Response>,
     #[serde(skip)]
     bytes_read: usize,
 }
@@ -48,20 +49,28 @@ impl TemplateApp {
     }
 
     fn serial_output_text(&mut self, ui: &mut egui::Ui, lines: usize) {
-        let serial_port = self.serial_port.as_mut().expect("asdf");
+        let serial_port = self.serial_port.as_mut().expect("Could not take serial port!");
         let mut new_output = [0_u8; 32];
-        self.bytes_read += serial_port.read(&mut new_output).unwrap_or(0);
-        ui.label(format!("Bytes read: {}", self.bytes_read));
-        self.serial_output += &String::from_utf8_lossy(&new_output);
-        let mut last_lines = self.serial_output.lines().rev().take(lines).collect::<Vec<&str>>();
-        last_lines.reverse();
-        self.serial_output = last_lines.join("\n");
+        let bytes_read = serial_port.read(&mut new_output).unwrap_or(0);
+        if bytes_read > 0 {
+            self.bytes_read += bytes_read;
 
-        ui.add(
-            TextEdit::multiline(&mut self.serial_output)
-                .interactive(false)
-                .desired_rows(lines),
-        );
+            // TODO: This implementation is VERY bad. It relies on the timeout of the serial port to separate messages
+            // if `leftover` is not an empty slice, the next message deserialization will fail, which always happens
+            // if the Response is a Response::List! Maybe this should be in a worker thread?
+            let (response, leftover): (Response, &[u8]) =
+                postcard::from_bytes(&new_output).unwrap_or((Response::Err, &new_output));
+
+            self.serial_responses.push_back(response);
+            while self.serial_responses.len() > lines {
+                self.serial_responses.pop_front();
+            }
+        }
+
+        ui.label(format!("Bytes read: {}", self.bytes_read));
+        for response in &self.serial_responses {
+            ui.label(format!("{:?}", response));
+        }
     }
 }
 
@@ -185,7 +194,7 @@ impl eframe::App for TemplateApp {
                 }
             }
             if disconnect {
-                self.serial_output = String::new();
+                self.serial_responses = Default::default();
                 self.bytes_read = 0;
                 self.serial_port = None;
             }

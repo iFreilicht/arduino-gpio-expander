@@ -5,6 +5,8 @@ use postcard::de_flavors::Flavor;
 use serde::{Deserialize, Serialize};
 
 pub type PinLabel = char;
+const MAX_PIN_NAME_SIZE: usize = 3; // Pins are named things like 13, D66 or A21
+pub type PinName = [char; MAX_PIN_NAME_SIZE]; // We don't use heapless::String because it creates large binaries
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Default, Clone, Copy)]
 pub enum PinState {
@@ -24,7 +26,7 @@ pub enum Action {
 pub enum Response {
     Output(PinLabel, PinState),
     Input(PinLabel, PinState),
-    List(PinLabel, &'static str), // This response is sent once for every pin
+    List(PinLabel, PinName), // This response is sent once for every pin
     Err,
 }
 

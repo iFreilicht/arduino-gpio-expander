@@ -4,7 +4,7 @@ use arduino_hal::hal::port::{
 };
 use core::{cell::Cell, fmt};
 use embedded_hal::digital::v2::{self as hal_digital, OutputPin};
-use gpio_actions::{PinLabel, PinState};
+use gpio_actions::{PinLabel, PinName, PinState};
 use heapless::FnvIndexMap;
 
 fn convert_state(state: PinState) -> hal_digital::PinState {
@@ -71,7 +71,7 @@ where
 pub trait IOPin: fmt::Debug {
     fn output_state(&mut self, state: PinState);
     fn input(&mut self) -> PinState;
-    fn name(&self) -> &'static str;
+    fn name(&self) -> PinName;
 }
 
 impl<T> IOPin for MutablePin<T>
@@ -92,8 +92,12 @@ where
         }
     }
 
-    fn name(&self) -> &'static str {
-        self.name
+    fn name(&self) -> PinName {
+        let mut name = PinName::default();
+        for (i, c) in self.name.chars().enumerate() {
+            name[i] = c;
+        }
+        name
     }
 }
 
