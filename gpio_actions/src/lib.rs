@@ -6,14 +6,14 @@ use serde::{Deserialize, Serialize};
 
 pub type PinLabel = char;
 
-#[derive(Serialize, Deserialize, Debug, Default)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Default)]
 pub enum PinState {
     #[default]
     Low,
     High,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub enum Action {
     Output(PinLabel, PinState),
     Input(PinLabel),
@@ -81,5 +81,31 @@ where
 
     fn finalize(self) -> postcard::Result<Self::Remainder> {
         postcard::Result::Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use heapless::Vec;
+
+    use super::*;
+
+    #[test]
+    fn serialize_rountrip() {
+        //! Just a sanity check to ensure all traits are properly implemented
+        let action = Action::Output('7', PinState::High);
+        let mut buffer = [0_u8; MAX_ACTION_WIRE_SIZE];
+        let serialized = postcard::to_slice(&action, &mut buffer).unwrap();
+        let deserialized = postcard::from_bytes(&serialized).unwrap();
+        assert_eq!(action, deserialized);
+    }
+
+    #[test]
+    fn deserialize_from_iter() {
+        //! Test our own [`BufferedIterator`] flavor
+        let action = Action::Output('a', PinState::Low);
+        let serialized: Vec<u8, MAX_ACTION_WIRE_SIZE> = postcard::to_vec(&action).unwrap();
+        let deserialized = try_action_from_iter(&mut serialized.into_iter()).unwrap();
+        assert_eq!(action, deserialized);
     }
 }
