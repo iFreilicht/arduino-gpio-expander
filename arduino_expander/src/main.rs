@@ -29,7 +29,9 @@ impl<'a> Iterator for UnoSerial<'a> {
 }
 
 fn send_response(serial: &mut BoardSerial, response: Response) {
-    let serialized: Vec<u8, 32> = postcard::to_vec(&response).unwrap();
+    // We have to use unwrap_or_default() instead of unwrap() here, otherwise the size of the .elf baloons by ~10K.
+    // I think this is because the panic!() inside unwrap() has to format a lot of stuff.
+    let serialized: Vec<u8, 32> = postcard::to_vec(&response).unwrap_or_default();
     for byte in serialized {
         serial.write_byte(byte);
     }
