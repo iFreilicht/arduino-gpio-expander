@@ -70,7 +70,7 @@ where
 
 pub trait IOPin: fmt::Debug {
     fn output_state(&mut self, state: PinState);
-    fn input(&mut self) -> bool;
+    fn input(&mut self) -> PinState;
     fn name(&self) -> &'static str;
 }
 
@@ -82,10 +82,14 @@ where
         self.pin.set(Some(self.pin.take().unwrap().output_state(state)))
     }
 
-    fn input(&mut self) -> bool {
+    fn input(&mut self) -> PinState {
         let mut is_high = false;
         self.pin.set(Some(self.pin.take().unwrap().input(&mut is_high)));
-        is_high
+        if is_high {
+            PinState::High
+        } else {
+            PinState::Low
+        }
     }
 
     fn name(&self) -> &'static str {
@@ -116,7 +120,7 @@ impl<'a> PinDispatcher<'a> {
         self.get_pin(pin_label).output_state(state);
     }
 
-    pub fn input(&mut self, pin_label: PinLabel) -> bool {
+    pub fn input(&mut self, pin_label: PinLabel) -> PinState {
         self.get_pin(pin_label).input()
     }
 

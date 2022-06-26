@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 pub type PinLabel = char;
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Default)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Default, Clone, Copy)]
 pub enum PinState {
     #[default]
     Low,
@@ -18,6 +18,14 @@ pub enum Action {
     Output(PinLabel, PinState),
     Input(PinLabel),
     List,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+pub enum Response {
+    Output(PinLabel, PinState),
+    Input(PinLabel, PinState),
+    List(PinLabel, &'static str), // This response is sent once for every pin
+    Err,
 }
 
 /// Maximum size a serialized [`Action`] can have on the wire, in bytes

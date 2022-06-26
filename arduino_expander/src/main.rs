@@ -11,17 +11,27 @@ use arduino_hal::{
     },
     Usart,
 };
-use gpio_actions::{try_action_from_iter, Action};
+use gpio_actions::{try_action_from_iter, Action, Response};
+use heapless::Vec;
 use pins::PinDispatcher;
 
 use panic_halt as _;
 
-struct UnoSerial<'a>(&'a mut Usart<USART0, Pin<Input, PD0>, Pin<Output, PD1>>);
+type BoardSerial = Usart<USART0, Pin<Input, PD0>, Pin<Output, PD1>>;
+
+struct UnoSerial<'a>(&'a mut BoardSerial);
 
 impl<'a> Iterator for UnoSerial<'a> {
     type Item = u8;
     fn next(&mut self) -> Option<u8> {
         Some(self.0.read_byte())
+    }
+}
+
+fn send_response(serial: &mut BoardSerial, response: Response) {
+    let serialized: Vec<u8, 32> = postcard::to_vec(&response).unwrap();
+    for byte in serialized {
+        serial.write_byte(byte);
     }
 }
 
@@ -55,25 +65,22 @@ fn main() -> ! {
 
     loop {
         match try_action_from_iter(&mut UnoSerial(&mut serial)) {
-            postcard::Result::Ok(action) => {
-                match action {
-                    Action::Output(pin_label, state) => pin_dispatcher.output(pin_label, state),
-                    Action::Input(pin_label) => {
-                        if pin_dispatcher.input(pin_label) {
-                            ufmt::uwrite!(&mut serial, "Pin is high. ").unwrap();
-                        } else {
-                            ufmt::uwrite!(&mut serial, "Pin is low. ").unwrap();
-                        }
-                    }
-                    Action::List => {
-                        for (pin_label, pin) in &pin_dispatcher {
-                            ufmt::uwriteln!(&mut serial, "{}: {}", pin_label, pin.name()).unwrap()
-                        }
+            postcard::Result::Ok(action) => match action {
+                Action::Output(pin_label, write_state) => {
+                    pin_dispatcher.output(pin_label, write_state);
+                    send_response(&mut serial, Response::Output(pin_label, write_state));
+                }
+                Action::Input(pin_label) => {
+                    let read_state = pin_dispatcher.input(pin_label);
+                    send_response(&mut serial, Response::Input(pin_label, read_state));
+                }
+                Action::List => {
+                    for (pin_label, pin) in &pin_dispatcher {
+                        send_response(&mut serial, Response::List(*pin_label, pin.name()));
                     }
                 }
-                ufmt::uwriteln!(&mut serial, "Done.").unwrap();
-            }
-            postcard::Result::Err(error) => ufmt::uwriteln!(&mut serial, "Syntax error.").unwrap(),
+            },
+            postcard::Result::Err(_error) => (),
         }
     }
 }
