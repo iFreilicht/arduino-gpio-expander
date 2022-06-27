@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 pub type PinLabel = char;
 const MAX_PIN_NAME_SIZE: usize = 3; // Pins are named things like 13, D66 or A21
-pub type PinName = [char; MAX_PIN_NAME_SIZE]; // We don't use heapless::String because it creates large binaries
+pub type PinName = [u8; MAX_PIN_NAME_SIZE]; // We don't use heapless::String because it creates large binaries
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Default, Clone, Copy)]
 pub enum PinState {

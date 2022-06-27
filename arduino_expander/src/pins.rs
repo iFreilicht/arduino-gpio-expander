@@ -93,12 +93,16 @@ where
     }
 
     fn name(&self) -> PinName {
-        let mut name = PinName::default();
-        for (i, c) in self.name.chars().enumerate() {
-            name[i] = c;
-        }
-        name
+        str_to_pin_name(self.name)
     }
+}
+
+fn str_to_pin_name(string: &str) -> PinName {
+    let mut name = PinName::default();
+    for (i, c) in string.bytes().enumerate() {
+        name[i] = c;
+    }
+    name
 }
 
 type PinMap<'a> = FnvIndexMap<PinLabel, &'a mut dyn IOPin, 64>;
