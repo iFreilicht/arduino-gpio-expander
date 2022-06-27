@@ -54,8 +54,8 @@ where
     }
 }
 
-pub trait TryFromIter<T, Iter, const BUF_SIZE: usize> {
-    fn try_from_iter(iter: &mut Iter) -> postcard::Result<T>
+pub trait TryFromIter<T, Iter> {
+    fn try_from_iter<const BUF_SIZE: usize>(iter: &mut Iter) -> postcard::Result<T>
     where
         Iter: Iterator<Item = u8>,
         T: DeserializeOwned,
@@ -67,3 +67,5 @@ pub trait TryFromIter<T, Iter, const BUF_SIZE: usize> {
         postcard::Result::Ok(t)
     }
 }
+
+impl<T, Iter> TryFromIter<T, Iter> for T {}

@@ -39,11 +39,9 @@ pub enum Response {
 
 /// Maximum size a serialized [`Action`] can have on the wire, in bytes
 pub const MAX_ACTION_WIRE_SIZE: usize = 8;
-impl<T> TryFromIter<Action, T, MAX_ACTION_WIRE_SIZE> for Action {}
 
 /// Maximum size a serialized [`Response`] can have on the wire, in bytes
 pub const MAX_RESPONSE_WIRE_SIZE: usize = 16;
-impl<T> TryFromIter<Response, T, MAX_RESPONSE_WIRE_SIZE> for Response {}
 
 #[cfg(test)]
 mod test {
@@ -66,7 +64,7 @@ mod test {
         //! Test our own [`BufferedIterator`] flavor
         let action = Action::Output('a', PinState::Low);
         let serialized: Vec<u8, MAX_ACTION_WIRE_SIZE> = postcard::to_vec(&action).unwrap();
-        let deserialized = Action::try_from_iter(&mut serialized.into_iter()).unwrap();
+        let deserialized = Action::try_from_iter::<MAX_ACTION_WIRE_SIZE>(&mut serialized.into_iter()).unwrap();
         assert_eq!(action, deserialized);
     }
 }
