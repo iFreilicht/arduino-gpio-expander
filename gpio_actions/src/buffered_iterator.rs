@@ -1,4 +1,5 @@
 use postcard::de_flavors::Flavor;
+use serde::de::DeserializeOwned;
 
 pub struct BufferedIterator<'a, T> {
     iter: &'a mut T,
@@ -50,5 +51,19 @@ where
 
     fn finalize(self) -> postcard::Result<Self::Remainder> {
         postcard::Result::Ok(())
+    }
+}
+
+pub trait TryFromIter<T, Iter, const BUF_SIZE: usize> {
+    fn try_from_iter(iter: &mut Iter) -> postcard::Result<T>
+    where
+        Iter: Iterator<Item = u8>,
+        T: DeserializeOwned,
+    {
+        let mut buffer = [0_u8; BUF_SIZE];
+        let buffered_iter = BufferedIterator::from_iter_and_buffer(iter, &mut buffer);
+        let mut deserializer = postcard::Deserializer::from_flavor(buffered_iter);
+        let t = T::deserialize(&mut deserializer)?;
+        postcard::Result::Ok(t)
     }
 }
