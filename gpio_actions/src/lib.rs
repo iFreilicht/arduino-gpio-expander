@@ -39,11 +39,9 @@ pub enum Response {
 
 /// Maximum size a serialized [`Action`] can have on the wire, in bytes
 pub const MAX_ACTION_WIRE_SIZE: usize = 8;
-impl<T> TryFromIter<Action, T, MAX_ACTION_WIRE_SIZE> for Action {}
 
 /// Maximum size a serialized [`Response`] can have on the wire, in bytes
 pub const MAX_RESPONSE_WIRE_SIZE: usize = 16;
-impl<T> TryFromIter<Response, T, MAX_RESPONSE_WIRE_SIZE> for Response {}
 
 #[cfg(test)]
 mod test {
