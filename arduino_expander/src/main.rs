@@ -11,7 +11,7 @@ use arduino_hal::{
     },
     Usart,
 };
-use gpio_actions::{try_action_from_iter, Action, Response};
+use gpio_actions::{Action, Response, TryFromIter};
 use heapless::Vec;
 use pins::PinDispatcher;
 
@@ -66,7 +66,7 @@ fn main() -> ! {
     add_pin!(pin_dispatcher, pins.a5, 'F');
 
     loop {
-        match try_action_from_iter(&mut UnoSerial(&mut serial)) {
+        match Action::try_from_iter(&mut UnoSerial(&mut serial)) {
             postcard::Result::Ok(action) => match action {
                 Action::Output(pin_label, write_state) => {
                     pin_dispatcher.output(pin_label, write_state);

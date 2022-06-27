@@ -8,6 +8,7 @@ pub use pin_name::PinName;
 
 mod buffered_iterator;
 pub use buffered_iterator::BufferedIterator;
+pub use buffered_iterator::TryFromIter;
 
 use core::fmt::Debug;
 use serde::{Deserialize, Serialize};
@@ -37,18 +38,12 @@ pub enum Response {
 }
 
 /// Maximum size a serialized [`Action`] can have on the wire, in bytes
-const MAX_ACTION_WIRE_SIZE: usize = 32;
+pub const MAX_ACTION_WIRE_SIZE: usize = 8;
+impl<T> TryFromIter<Action, T, MAX_ACTION_WIRE_SIZE> for Action {}
 
-pub fn try_action_from_iter<T>(iter: &mut T) -> postcard::Result<Action>
-where
-    T: Iterator<Item = u8>,
-{
-    let mut buffer = [0_u8; MAX_ACTION_WIRE_SIZE];
-    let buffered_iter = BufferedIterator::from_iter_and_buffer(iter, &mut buffer);
-    let mut deserializer = postcard::Deserializer::from_flavor(buffered_iter);
-    let t = Action::deserialize(&mut deserializer)?;
-    postcard::Result::Ok(t)
-}
+/// Maximum size a serialized [`Response`] can have on the wire, in bytes
+pub const MAX_RESPONSE_WIRE_SIZE: usize = 16;
+impl<T> TryFromIter<Response, T, MAX_RESPONSE_WIRE_SIZE> for Response {}
 
 #[cfg(test)]
 mod test {
@@ -71,7 +66,7 @@ mod test {
         //! Test our own [`BufferedIterator`] flavor
         let action = Action::Output('a', PinState::Low);
         let serialized: Vec<u8, MAX_ACTION_WIRE_SIZE> = postcard::to_vec(&action).unwrap();
-        let deserialized = try_action_from_iter(&mut serialized.into_iter()).unwrap();
+        let deserialized = Action::try_from_iter(&mut serialized.into_iter()).unwrap();
         assert_eq!(action, deserialized);
     }
 }
