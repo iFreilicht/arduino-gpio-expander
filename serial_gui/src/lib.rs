@@ -5,7 +5,7 @@ use std::{
 };
 
 use egui::{ComboBox, TextEdit};
-use gpio_actions::{Action, PinState, Response};
+use gpio_actions::{Action, PinState, Response, TryFromIter, MAX_RESPONSE_WIRE_SIZE};
 use serialport::{SerialPort, SerialPortInfo};
 
 #[derive(serde::Deserialize, serde::Serialize, Default, Debug, PartialEq, Eq, PartialOrd)]
@@ -33,6 +33,29 @@ pub struct TemplateApp {
 
 const DEFAULT_PIN_LABEL: char = '?';
 
+struct SerialIter<'a> {
+    port: &'a mut serialport::TTYPort,
+    bytes_read: usize,
+}
+
+impl<'a> SerialIter<'a> {
+    pub fn new(port: &'a mut serialport::TTYPort) -> Self {
+        Self { port, bytes_read: 0 }
+    }
+}
+
+impl<'a> Iterator for SerialIter<'a> {
+    type Item = u8;
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut buf = [0_u8; 1];
+        if self.port.read_exact(&mut buf).is_err() {
+            return None;
+        }
+        self.bytes_read += 1;
+        Some(buf[0])
+    }
+}
+
 impl TemplateApp {
     /// Called once before the first frame.
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
@@ -50,17 +73,12 @@ impl TemplateApp {
 
     fn serial_output_text(&mut self, ui: &mut egui::Ui, lines: usize) {
         let serial_port = self.serial_port.as_mut().expect("Could not take serial port!");
-        let mut new_output = [0_u8; 32];
-        let bytes_read = serial_port.read(&mut new_output).unwrap_or(0);
-        if bytes_read > 0 {
-            self.bytes_read += bytes_read;
+        let mut serial_iter = SerialIter::new(serial_port);
 
-            // TODO: This implementation is VERY bad. It relies on the timeout of the serial port to separate messages
-            // if `leftover` is not an empty slice, the next message deserialization will fail, which always happens
-            // if the Response is a Response::List! Maybe this should be in a worker thread?
-            let (response, leftover): (Response, &[u8]) =
-                postcard::from_bytes(&new_output).unwrap_or((Response::Err, &new_output));
+        let response_result = Response::try_from_iter::<MAX_RESPONSE_WIRE_SIZE>(&mut serial_iter);
+        self.bytes_read += serial_iter.bytes_read;
 
+        if let Ok(response) = response_result {
             self.serial_responses.push_back(response);
             while self.serial_responses.len() > lines {
                 self.serial_responses.pop_front();
