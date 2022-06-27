@@ -5,6 +5,9 @@ use core::{
 };
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "std")]
+use std::string::String;
+
 const MAX_PIN_NAME_SIZE: usize = 3; // Pins are named things like 13, D66 or A21
 
 #[derive(Serialize, Deserialize, Default, PartialEq, Eq)]
@@ -21,6 +24,13 @@ impl FromStr for PinName {
             name.0[i] = c;
         }
         Ok(name)
+    }
+}
+
+#[cfg(feature = "std")]
+impl From<PinName> for String {
+    fn from(pin_name: PinName) -> Self {
+        String::from_utf8_lossy(&pin_name.0).into_owned()
     }
 }
 

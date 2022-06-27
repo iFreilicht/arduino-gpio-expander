@@ -1,9 +1,12 @@
 #![no_std]
 
-mod pin_name;
-use pin_name::PinName;
+#[cfg(feature = "std")]
+extern crate std;
 
-use core::fmt::{Debug, Write};
+mod pin_name;
+pub use pin_name::PinName;
+
+use core::fmt::Debug;
 use postcard::de_flavors::Flavor;
 use serde::{Deserialize, Serialize};
 
