@@ -2,7 +2,7 @@ use arduino_hal::hal::port::{
     mode::{Floating, Input, Output, PullUp},
     Pin,
 };
-use core::{cell::Cell, fmt};
+use core::{cell::Cell, fmt, str::FromStr};
 use embedded_hal::digital::v2::{self as hal_digital, OutputPin};
 use gpio_actions::{PinLabel, PinName, PinState};
 use heapless::FnvIndexMap;
@@ -93,16 +93,8 @@ where
     }
 
     fn name(&self) -> PinName {
-        str_to_pin_name(self.name)
+        PinName::from_str(self.name).unwrap()
     }
-}
-
-fn str_to_pin_name(string: &str) -> PinName {
-    let mut name = PinName::default();
-    for (i, c) in string.bytes().enumerate() {
-        name[i] = c;
-    }
-    name
 }
 
 type PinMap<'a> = FnvIndexMap<PinLabel, &'a mut dyn IOPin, 64>;
