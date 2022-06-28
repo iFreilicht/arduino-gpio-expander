@@ -22,14 +22,14 @@ pub enum PinState {
     High,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Action {
     Output(PinLabel, PinState),
     Input(PinLabel),
     List,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Response {
     Output(PinLabel, PinState),
     Input(PinLabel, PinState),

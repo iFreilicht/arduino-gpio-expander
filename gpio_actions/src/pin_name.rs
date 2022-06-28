@@ -10,7 +10,7 @@ use std::string::String;
 
 const MAX_PIN_NAME_SIZE: usize = 3; // Pins are named things like 13, D66 or A21
 
-#[derive(Serialize, Deserialize, Default, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Copy, Default, PartialEq, Eq)]
 pub struct PinName([u8; MAX_PIN_NAME_SIZE]); // We don't use heapless::String because it creates large binaries
 
 impl FromStr for PinName {
