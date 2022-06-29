@@ -1,11 +1,11 @@
 use std::{
-    collections::VecDeque,
+    collections::{HashMap, VecDeque},
     io::{Read, Write},
     time::Duration,
 };
 
-use egui::{ComboBox, TextEdit};
-use gpio_actions::{Action, PinState, Response, TryFromIter, MAX_RESPONSE_WIRE_SIZE};
+use egui::{mutex::Mutex, ComboBox, TextEdit};
+use gpio_actions::{Action, PinLabel, PinName, PinState, Response, TryFromIter, MAX_RESPONSE_WIRE_SIZE};
 use serialport::{SerialPort, SerialPortInfo};
 
 #[derive(serde::Deserialize, serde::Serialize, Default, Debug, PartialEq, Eq, PartialOrd)]
@@ -24,11 +24,13 @@ pub struct TemplateApp {
     pin_label: String,
     pin_high: bool,
     #[serde(skip)]
-    serial_port: Option<serialport::TTYPort>,
+    serial_port: Mutex<Option<serialport::TTYPort>>,
     #[serde(skip)]
     serial_responses: VecDeque<Response>,
     #[serde(skip)]
     bytes_read: usize,
+    #[serde(skip)]
+    pin_map: HashMap<PinLabel, PinName>,
 }
 
 const DEFAULT_PIN_LABEL: char = '?';
@@ -71,8 +73,10 @@ impl TemplateApp {
         Default::default()
     }
 
-    fn serial_output_text(&mut self, ui: &mut egui::Ui, lines: usize) {
-        let serial_port = self.serial_port.as_mut().expect("Could not take serial port!");
+    fn read_from_serial(&mut self, lines: usize) {
+        let mut port_mutex_guard = self.serial_port.lock();
+        let serial_port = port_mutex_guard.as_mut().expect("Not connected to serial port?");
+
         let mut serial_iter = SerialIter::new(serial_port);
 
         let response_result = Response::try_from_iter::<MAX_RESPONSE_WIRE_SIZE>(&mut serial_iter);
@@ -83,7 +87,57 @@ impl TemplateApp {
             while self.serial_responses.len() > lines {
                 self.serial_responses.pop_front();
             }
+
+            if let Response::List(label, name) = response {
+                self.pin_map.insert(label, name);
+            }
         }
+    }
+
+    fn connect(&mut self, port: SerialPortInfo) {
+        let tty_port = serialport::new(port.port_name, 57600)
+            .timeout(Duration::from_millis(10))
+            .open_native()
+            .expect("Failed to open serial port!");
+
+        self.serial_port = Mutex::new(Some(tty_port));
+    }
+
+    fn send_action(&self, action: Action) {
+        let mut port_mutex_guard = self.serial_port.lock();
+        let serial_port = port_mutex_guard.as_mut().expect("Not connected to serial port?");
+
+        let serialized_list = postcard::to_stdvec(&action).expect("Failed to serialize action!");
+        serial_port.write_all(&serialized_list).expect("Failed to send action!");
+    }
+
+    fn build_pin_list(&mut self, ui: &mut egui::Ui) {
+        if self.pin_map.is_empty() {
+            self.send_action(Action::List);
+            return;
+        }
+
+        ui.vertical(|ui| {
+            for (&pin_label, &pin_name) in &self.pin_map {
+                ui.horizontal(|ui| {
+                    ui.heading(String::from(pin_name));
+                    ui.label(String::from(pin_label));
+                    if ui.button("Set High").clicked() {
+                        self.send_action(Action::Output(pin_label, PinState::High));
+                    }
+                    if ui.button("Set Low").clicked() {
+                        self.send_action(Action::Output(pin_label, PinState::Low));
+                    }
+                    if ui.button("Input").clicked() {
+                        self.send_action(Action::Output(pin_label, PinState::Low));
+                    }
+                });
+            }
+        });
+    }
+
+    fn serial_output_text(&mut self, ui: &mut egui::Ui, lines: usize) {
+        self.read_from_serial(lines);
 
         ui.label(format!("Bytes read: {}", self.bytes_read));
         for response in &self.serial_responses {
@@ -177,22 +231,29 @@ impl eframe::App for TemplateApp {
             });
 
             let mut disconnect = false;
-            if let Some(serial_port) = &mut self.serial_port {
+            if self.serial_port.lock().is_some() {
                 ui.heading("Serial connection");
                 ui.horizontal(|ui| {
-                    ui.label(format!("Connected to {}", serial_port.name().unwrap_or_default()));
+                    ui.label(format!(
+                        "Connected to {}",
+                        self.serial_port.lock().as_ref().unwrap().name().unwrap_or_default()
+                    ));
                     if ui.button("Disconnect").clicked() {
                         disconnect = true;
                     }
                 });
 
-                if ui.button("Send action").clicked() {
-                    serial_port
-                        .write_all(&serialized_action)
-                        .expect("Failed to send action!");
-                }
+                ui.horizontal(|ui| {
+                    ui.vertical(|ui| {
+                        if ui.button("Send action").clicked() {
+                            self.send_action(action)
+                        }
 
-                self.serial_output_text(ui, 30);
+                        self.serial_output_text(ui, 30);
+                    });
+
+                    self.build_pin_list(ui)
+                });
             } else {
                 ui.heading("Serial ports");
                 let ports = serialport::available_ports().expect("No serial ports found!");
@@ -201,11 +262,7 @@ impl eframe::App for TemplateApp {
                         ui.label(format_port(&port));
                         if let serialport::SerialPortType::UsbPort(_) = port.port_type.clone() {
                             if ui.button("Connect").clicked() {
-                                let tty_port = serialport::new(port.port_name, 57600)
-                                    .timeout(Duration::from_millis(10))
-                                    .open_native()
-                                    .expect("Failed to open serial port!");
-                                self.serial_port = Some(tty_port);
+                                self.connect(port)
                             }
                         };
                     });
@@ -213,8 +270,9 @@ impl eframe::App for TemplateApp {
             }
             if disconnect {
                 self.serial_responses = Default::default();
+                self.pin_map = Default::default();
                 self.bytes_read = 0;
-                self.serial_port = None;
+                self.serial_port = Default::default();
             }
         });
     }
