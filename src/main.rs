@@ -1,12 +1,9 @@
 #![no_std]
 #![no_main]
 
-use arduino_hal::{
-    hal::port::{PB5, PD2, PD3, PD4, PD5, PD6, PD7},
-    port::{
-        mode::{Input, Output, PullUp},
-        Pin,
-    },
+use arduino_hal::port::{
+    mode::{Input, Output, PullUp},
+    Pin,
 };
 use embedded_hal::digital::v2::{OutputPin, PinState};
 use panic_halt as _;
@@ -44,63 +41,6 @@ where
     }
 }
 
-enum UnoPin {
-    D13(IOPin<PB5>),
-    D2(IOPin<PD2>),
-    D3(IOPin<PD3>),
-    D4(IOPin<PD4>),
-    D5(IOPin<PD5>),
-    D6(IOPin<PD6>),
-    D7(IOPin<PD7>),
-}
-
-impl UnoPin {
-    fn output_state(self, state: PinState) -> Self {
-        match self {
-            Self::D13(io_pin) => Self::D13(io_pin.output_state(state)),
-            Self::D2(io_pin) => Self::D2(io_pin.output_state(state)),
-            Self::D3(io_pin) => Self::D3(io_pin.output_state(state)),
-            Self::D4(io_pin) => Self::D4(io_pin.output_state(state)),
-            Self::D5(io_pin) => Self::D5(io_pin.output_state(state)),
-            Self::D6(io_pin) => Self::D6(io_pin.output_state(state)),
-            Self::D7(io_pin) => Self::D7(io_pin.output_state(state)),
-        }
-    }
-
-    fn input(self) -> (Self, bool) {
-        match self {
-            Self::D13(io_pin) => {
-                let (pin, is_high) = io_pin.input();
-                (Self::D13(pin), is_high)
-            }
-            Self::D2(io_pin) => {
-                let (pin, is_high) = io_pin.input();
-                (Self::D2(pin), is_high)
-            }
-            Self::D3(io_pin) => {
-                let (pin, is_high) = io_pin.input();
-                (Self::D3(pin), is_high)
-            }
-            Self::D4(io_pin) => {
-                let (pin, is_high) = io_pin.input();
-                (Self::D4(pin), is_high)
-            }
-            Self::D5(io_pin) => {
-                let (pin, is_high) = io_pin.input();
-                (Self::D5(pin), is_high)
-            }
-            Self::D6(io_pin) => {
-                let (pin, is_high) = io_pin.input();
-                (Self::D6(pin), is_high)
-            }
-            Self::D7(io_pin) => {
-                let (pin, is_high) = io_pin.input();
-                (Self::D7(pin), is_high)
-            }
-        }
-    }
-}
-
 #[arduino_hal::entry]
 fn main() -> ! {
     let dp = arduino_hal::Peripherals::take().unwrap();
@@ -118,13 +58,13 @@ fn main() -> ! {
      * examples available.
      */
 
-    let mut d2 = UnoPin::D2(IOPin::Input(pins.d2.into_pull_up_input()));
-    let mut d3 = UnoPin::D3(IOPin::Input(pins.d3.into_pull_up_input()));
-    let mut d4 = UnoPin::D4(IOPin::Input(pins.d4.into_pull_up_input()));
-    let mut d5 = UnoPin::D5(IOPin::Input(pins.d5.into_pull_up_input()));
-    let mut d6 = UnoPin::D6(IOPin::Input(pins.d6.into_pull_up_input()));
-    let mut d7 = UnoPin::D7(IOPin::Input(pins.d7.into_pull_up_input()));
-    let mut led = UnoPin::D13(IOPin::Input(pins.d13.into_pull_up_input()));
+    let mut d2 = IOPin::Input(pins.d2.into_pull_up_input());
+    let mut d3 = IOPin::Input(pins.d3.into_pull_up_input());
+    let mut d4 = IOPin::Input(pins.d4.into_pull_up_input());
+    let mut d5 = IOPin::Input(pins.d5.into_pull_up_input());
+    let mut d6 = IOPin::Input(pins.d6.into_pull_up_input());
+    let mut d7 = IOPin::Input(pins.d7.into_pull_up_input());
+    let mut led = IOPin::Input(pins.d13.into_pull_up_input());
 
     loop {
         let mut pin: Option<char> = None;
