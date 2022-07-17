@@ -20,26 +20,27 @@ fn main() -> ! {
 
     let mut serial = arduino_hal::default_serial!(dp, pins, 57600);
 
-    let mut pin_dispatcher = PinDispatcher::new();
-    add_pin!(pin_dispatcher, pins.d13, '1');
-    add_pin!(pin_dispatcher, pins.d2, '2');
-    add_pin!(pin_dispatcher, pins.d3, '3');
-    add_pin!(pin_dispatcher, pins.d4, '4');
-    add_pin!(pin_dispatcher, pins.d5, '5');
-    add_pin!(pin_dispatcher, pins.d6, '6');
-    add_pin!(pin_dispatcher, pins.d7, '7');
-    add_pin!(pin_dispatcher, pins.d8, '8');
-    add_pin!(pin_dispatcher, pins.d9, '9');
-    add_pin!(pin_dispatcher, pins.d10, 'a');
-    add_pin!(pin_dispatcher, pins.d11, 'b');
-    add_pin!(pin_dispatcher, pins.d12, 'c');
-
-    add_pin!(pin_dispatcher, pins.a0, 'A');
-    add_pin!(pin_dispatcher, pins.a1, 'B');
-    add_pin!(pin_dispatcher, pins.a2, 'C');
-    add_pin!(pin_dispatcher, pins.a3, 'D');
-    add_pin!(pin_dispatcher, pins.a4, 'E');
-    add_pin!(pin_dispatcher, pins.a5, 'F');
+    create_pin_dispatcher!(
+        let mut pin_dispatcher {
+            '1' => pins.d13,
+            '2' => pins.d2,
+            '3' => pins.d3,
+            '4' => pins.d4,
+            '5' => pins.d5,
+            '6' => pins.d6,
+            '7' => pins.d7,
+            '8' => pins.d8,
+            '9' => pins.d9,
+            'a' => pins.d10,
+            'b' => pins.d11,
+            'c' => pins.d12,
+            'A' => pins.a0,
+            'B' => pins.a1,
+            'C' => pins.a2,
+            'D' => pins.a3,
+            'E' => pins.a4,
+            'F' => pins.a5
+    });
 
     loop {
         let mut pin: Option<char> = None;

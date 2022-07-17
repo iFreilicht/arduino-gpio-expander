@@ -134,4 +134,17 @@ macro_rules! add_pin {
         let mut $name = pins::MutablePin::new($pins.$name, stringify!($name));
         $dispatcher.add_pin($tag, &mut $name);
     };
+
+    ($dispatcher:ident, $pins:ident.$name:ident, $tag:literal, $($d:ident, $p:ident.$n:ident, $t:literal),+ ) => {
+        add_pin! { $dispatcher, $pins.$name, $tag }
+        add_pin! { $($d, $p.$n, $t),+ }
+    }
+}
+
+#[macro_export]
+macro_rules! create_pin_dispatcher {
+    (let mut $dispatcher:ident { $($tags:literal => $pins:ident.$names:ident),+ }) => {
+        let mut $dispatcher = PinDispatcher::new();
+        add_pin! { $($dispatcher, $pins.$names, $tags),+ };
+    };
 }
